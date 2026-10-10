@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo, MotionStyle } from 'motion/react';
 import { toast } from 'sonner';
-import { Profile } from '../types';
+import type { Match, Profile } from '../types';
 import type { DiscoverQuota } from '../lib/api/discover';
 import { sounds } from '../utils/audio';
 import { computeAffinity } from '../utils/compatibility';
@@ -15,6 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card } from './ui/card';
 import { Skeleton } from './ui/skeleton';
 import { LocationPrompt } from './LocationPrompt';
+import { OutOfProfilesView } from './OutOfProfilesView';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -55,7 +56,14 @@ interface DiscoverViewProps {
    * señal explicada a la afinidad; nunca filtra ni reordena el mazo. */
   dailyMoodId?: string | null;
   onSelectDailyMood?: (id: string | null) => void;
+  /** Matches activos: al quedarse sin perfiles se sugiere escribirles. */
+  matches?: Match[];
+  onOpenMatches?: () => void;
+  onOpenChat?: (connectionId: string) => void;
 }
+
+/** Desde cuántos pases restantes se avisa que se viene el like obligatorio. */
+const PASS_WARNING_AT = 3;
 
 type StampKind = 'like' | 'pass' | 'star';
 
@@ -118,6 +126,9 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   resetKey = '',
   dailyMoodId = null,
   onSelectDailyMood,
+  matches = [],
+  onOpenMatches,
+  onOpenChat,
 }) => {
   const { isLight } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -196,7 +207,20 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  const quotaExhausted = quota ? quota.remaining <= 0 : false;
+  const unlimited = quota?.unlimited === true;
+  const quotaExhausted = quota && !unlimited ? quota.remaining <= 0 : false;
+
+  // "Sí o sí un like": el backend rechaza el pase número maxConsecutivePasses+1
+  // (LIKE_REQUIRED). La racha se lleva también acá para bloquear al instante, sin
+  // esperar a que vuelva la cuota del servidor después de cada pase.
+  const maxPasses = quota?.maxConsecutivePasses ?? 0;
+  const [passStreak, setPassStreak] = useState(quota?.passStreak ?? 0);
+  useEffect(() => {
+    if (quota?.passStreak !== undefined) setPassStreak(quota.passStreak);
+  }, [quota?.passStreak]);
+  const passLocked = maxPasses > 0 && passStreak >= maxPasses;
+  const passesLeft = maxPasses > 0 ? Math.max(0, maxPasses - passStreak) : null;
+  const [lockNudge, setLockNudge] = useState(0);
 
   // Tocar el banner de "Persona del día" adelanta ese perfil a la posición actual del
   // mazo (en vez de abrir un modal aparte) para que Me gusta/Pasar/Super Spark ya
@@ -331,18 +355,23 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     );
   }
 
-  if (quotaExhausted) {
+  if (quotaExhausted || !currentProfile) {
     return (
       <div className="flex flex-col gap-4">
         <LocationPrompt />
-        <EmptyState
-          icon="bolt"
-          accent="amber"
-          title="Por hoy está bien"
-          body={`Mañana hay más historias — el cupo vuelve ${quota ? new Date(quota.resetsAt).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' }) : 'a la medianoche'}. Calidad antes que cantidad: eso también es FINDY.`}
-          actions={
-            onOpenStore
-              ? [{ label: 'Ampliar cupo en la tienda', onClick: () => onOpenStore(), icon: 'storefront' }]
+        <OutOfProfilesView
+          reason={quotaExhausted ? 'quota' : 'empty'}
+          matches={matches}
+          resetsAt={quota?.resetsAt}
+          canExpandQuota={!unlimited}
+          onOpenMatches={onOpenMatches}
+          onOpenChat={onOpenChat}
+          onOpenStore={onOpenStore}
+          onReload={onReload}
+          isReloading={isLoading}
+          extraActions={
+            !quotaExhausted && intentionId && onSelectIntention
+              ? [{ label: 'Ver sin filtro de intención', onClick: () => onSelectIntention(null) }]
               : []
           }
         />
@@ -350,31 +379,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     );
   }
 
-  if (!currentProfile) {
-    return (
-      <div className="flex flex-col gap-4">
-        <LocationPrompt />
-        <EmptyState
-          icon="auto_stories"
-          title="Ya viste todo lo de hoy"
-          body={
-            intentionId
-              ? 'Con tu intención activa no queda nadie por ver. Probá pausarla o volver mañana.'
-              : 'Mañana hay más historias. Descansar también es parte del ritual.'
-          }
-          actions={[
-            { label: isLoading ? 'Buscando…' : 'Buscar de nuevo', onClick: () => onReload?.(), icon: 'refresh' },
-            ...(intentionId && onSelectIntention
-              ? [{ label: 'Ver sin filtro de intención', onClick: () => onSelectIntention(null), variant: 'link' as const }]
-              : []),
-          ]}
-        />
-      </div>
-    );
-  }
-
   const triggerAction = (type: 'liked' | 'passed' | 'starred', fragmentLabel?: string | null) => {
     if (actionLock.current || leaving || !currentProfile) return;
+    if (type === 'passed' && passLocked) {
+      // La carta vuelve sola con el spring; se marca el aviso para que se note.
+      sounds.playClick();
+      setLockNudge((n) => n + 1);
+      return;
+    }
     actionLock.current = true;
     dismissHint();
     const dir = type === 'liked' ? 'right' : type === 'passed' ? 'left' : 'up';
@@ -386,6 +398,8 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     dragX.set(0);
     dragY.set(0);
     setLeaving({ profile, dir, fromX, fromY, label: fragmentLabel ?? likedFragment });
+
+    setPassStreak((n) => (type === 'passed' ? n + 1 : 0));
 
     if (type === 'liked') {
       sounds.playStamp();
@@ -485,10 +499,16 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                   ? 'bg-[#efe7d8] text-[#5b6478]'
                   : 'bg-white/8 text-[#a9b2c9]'
               }`}
-              title={`Se renueva ${new Date(quota.resetsAt).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}`}
+              title={
+                unlimited
+                  ? 'Tu plan no tiene tope diario de perfiles'
+                  : `Se renueva ${new Date(quota.resetsAt).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}`
+              }
             >
               <span className="material-symbols-outlined text-[13px]">bolt</span>
-              {quotaExhausted
+              {unlimited
+                ? 'Sin límite'
+                : quotaExhausted
                 ? 'Por hoy está bien'
                 : `${quota.remaining} ${quota.remaining === 1 ? 'historia' : 'historias'} hoy`}
             </div>
@@ -1241,6 +1261,52 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 </button>
               )}
 
+              {/* Like obligatorio: aviso suave cuando quedan pocos pases, y bloqueo
+                  claro cuando se acabaron (el backend responde LIKE_REQUIRED). */}
+              <AnimatePresence initial={false}>
+                {(passLocked || (passesLeft !== null && passesLeft <= PASS_WARNING_AT)) && (
+                  <motion.div
+                    key={passLocked ? 'locked' : 'warning'}
+                    role="status"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.25 }}
+                    className="mx-4 mt-3"
+                  >
+                  {/* key por intento: cada vez que se intenta pasar bloqueado, se sacude de nuevo. */}
+                  <motion.div
+                    key={passLocked ? `nudge-${lockNudge}` : 'warning'}
+                    animate={passLocked && lockNudge > 0 ? { x: [0, -8, 8, -5, 5, 0] } : { x: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`flex items-start gap-2 rounded-[var(--radius-md)] px-3 py-2.5 text-left text-[12px] leading-snug ${
+                      passLocked
+                        ? 'bg-[#ec4d86]/12 text-[#c23a6c] dark:text-[#ffa3c4]'
+                        : isLight
+                        ? 'bg-[#efe7d8] text-[#5b6478]'
+                        : 'bg-white/6 text-[#a9b2c9]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined mt-px text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {passLocked ? 'favorite' : 'info'}
+                    </span>
+                    <span>
+                      {passLocked ? (
+                        <>
+                          <strong className="font-bold">Pasaste {maxPasses} perfiles seguidos.</strong> Para seguir viendo, dale
+                          me gusta a alguien que te interese: así le das una chance real al match.
+                        </>
+                      ) : passesLeft === 1 ? (
+                        'Te queda 1 pase: después vas a tener que dar un me gusta para seguir.'
+                      ) : (
+                        `Te quedan ${passesLeft} pases: después vas a tener que dar un me gusta para seguir.`
+                      )}
+                    </span>
+                  </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Action row: pasar / me gusta / destacar, con deshacer discreto. */}
               <div className="pt-4 pb-2 flex items-center justify-center gap-4">
                 <motion.button
@@ -1267,17 +1333,22 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: passLocked ? 1 : 1.1 }}
+                  whileTap={{ scale: passLocked ? 1 : 0.9 }}
                   id="btn-discover-pass"
                   onClick={() => triggerAction('passed')}
+                  aria-disabled={passLocked}
                   className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shadow-elevation-sm transition-colors ${
-                    isLight ? 'bg-white text-[#ff6b9e]' : 'bg-[#131f3690] text-[#ffa3c4]'
+                    passLocked
+                      ? 'opacity-40 cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-white/5 dark:text-white/40'
+                      : isLight
+                      ? 'bg-white text-[#ff6b9e]'
+                      : 'bg-[#131f3690] text-[#ffa3c4]'
                   }`}
-                  title="Pasar"
-                  aria-label="Pasar perfil"
+                  title={passLocked ? 'Dale me gusta a alguien para seguir pasando' : 'Pasar'}
+                  aria-label={passLocked ? 'Pasar bloqueado: dale me gusta a alguien para seguir' : 'Pasar perfil'}
                 >
-                  <span className="material-symbols-outlined text-[22px]">close</span>
+                  <span className="material-symbols-outlined text-[22px]">{passLocked ? 'lock' : 'close'}</span>
                 </motion.button>
 
                 <motion.button

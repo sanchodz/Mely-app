@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { ShopItem } from '../../types';
-import { blackSavings, coinsPerDay, COMPARISON_ROWS, describeLedgerReason, nextStepPlan, perkLabel, PLANS } from './storeCatalog';
+import {
+  blackSavings,
+  coinsPerDay,
+  COMPARISON_ROWS,
+  describeLedgerReason,
+  nextStepPlan,
+  perkLabel,
+  PLANS,
+  powerRedundantForTier,
+} from './storeCatalog';
 
 const item = (key: string, price: number): ShopItem => ({ key, name: key, description: '', price, priceUsd: null });
 const allPlans = [item('MEMBERSHIP_PREMIUM', 150), item('MEMBERSHIP_VIP', 400), item('MEMBERSHIP_FOUNDING', 900)];
@@ -70,5 +79,19 @@ describe('catálogo', () => {
   it('los planes van de menor a mayor duración', () => {
     const days = PLANS.map((p) => p.durationDays);
     expect([...days].sort((a, b) => a - b)).toEqual(days);
+  });
+});
+
+describe('historias por día', () => {
+  it('coincide con el backend: Gratis 20, Plus 40, Gold y Black sin límite', () => {
+    const row = COMPARISON_ROWS.find((r) => r.label === 'Historias por día')!;
+    expect(row.values).toEqual({ STANDARD: '20', PREMIUM: '40', VIP: 'Sin límite', FOUNDING: 'Sin límite' });
+  });
+
+  it('no ofrece perfiles extra a quien ya no tiene tope', () => {
+    expect(powerRedundantForTier('EXTRA_PROFILES', 'VIP')).toBe(true);
+    expect(powerRedundantForTier('EXTRA_PROFILES', 'FOUNDING')).toBe(true);
+    expect(powerRedundantForTier('EXTRA_PROFILES', 'PREMIUM')).toBe(false);
+    expect(powerRedundantForTier('BOOST', 'FOUNDING')).toBe(false);
   });
 });

@@ -122,6 +122,14 @@ function AppContent() {
     }
   };
 
+  // Las queries de abajo se montan también en la pantalla de bienvenida, sin sesión:
+  // fallan con 401 y, al iniciar sesión, nadie las volvía a pedir (matches vacíos,
+  // 0 coins, tienda sin ítems hasta recargar). Al entrar se reintentan las que fallaron.
+  useEffect(() => {
+    if (!user?.id) return;
+    queryClient.refetchQueries({ predicate: (q) => q.state.status === 'error' });
+  }, [user?.id, queryClient]);
+
   // Seed discovery filters from the user's persisted preferences once loaded.
   useEffect(() => {
     if (!user) return;
@@ -295,11 +303,30 @@ function AppContent() {
           setMatchCelebration({ profile, connectionId: res.match.id, coinsEarned: res.match.coinsEarned, contextLabel: consumeFragment(profile.id) });
         }
       },
+      onError: (err) => handleSwipeError(err, 'No se pudo enviar el me gusta'),
     });
   };
 
   const handlePass = (profile: Profile) => {
-    swipe.pass.mutate(profile.id);
+    swipe.pass.mutate(profile.id, {
+      onError: (err) => handleSwipeError(err, 'No se pudo pasar el perfil'),
+    });
+  };
+
+  // La carta ya salió del mazo cuando el servidor rechaza: se recarga Descubrir para
+  // que vuelva (o para que aparezca la pantalla de "sin perfiles" si fue el cupo).
+  // Antes los errores de like/pase se perdían en silencio.
+  const handleSwipeError = (err: unknown, fallback: string) => {
+    discoverQuery.refetch();
+    if (err instanceof ApiError && err.code === 'LIKE_REQUIRED') {
+      toast('Para seguir, dale me gusta a alguien', {
+        description: 'Pasaste muchos perfiles seguidos. Un me gusta le da una chance real al match.',
+      });
+    } else if (err instanceof ApiError && err.code === 'DAILY_LIMIT') {
+      // La pantalla de "te quedaste sin perfiles" ya lo explica.
+    } else {
+      toast.error(err instanceof Error ? err.message : fallback);
+    }
   };
 
   const handleSuperLike = (profile: Profile) => {
@@ -475,6 +502,9 @@ function AppContent() {
                 resetKey={discoverResetKey}
                 dailyMoodId={dailyMoodId}
                 onSelectDailyMood={handleSelectDailyMood}
+                matches={matches}
+                onOpenMatches={() => handleTabChange('matches')}
+                onOpenChat={(connectionId) => handleOpenChat(connectionId)}
               />
             )}
 

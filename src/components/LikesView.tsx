@@ -167,7 +167,7 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
                     Ver quién te dio like
                   </p>
                   <p className="text-[11.5px]" style={{ color: isLight ? 'var(--text-on-light-muted)' : 'var(--text-secondary)' }}>
-                    Desbloqueá esta lista con monedas o Premium.
+                    Desbloqueala con monedas. Con Plus, Gold o Black ya está incluida.
                   </p>
                   <Button variant="primary" onClick={handleUnlock} disabled={purchase.isPending} className="w-full gap-1.5 mt-1">
                     <span className="material-symbols-outlined text-[16px]">lock_open</span>
