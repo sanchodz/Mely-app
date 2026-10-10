@@ -35,7 +35,7 @@ export const PLANS: PlanDefinition[] = [
     accent: 'coral',
     durationDays: 7,
     tagline: 'Para probar una semana con más alcance.',
-    adds: ['Perfil destacado en Descubrir', 'Ver quién te dio like', '+20 historias extra por día', '1 Boost gratis por semana'],
+    adds: ['Perfil destacado en Descubrir', 'Ver quién te dio like', '40 historias por día (el doble que Gratis)', '1 Boost gratis por semana'],
   },
   {
     key: 'MEMBERSHIP_VIP',
@@ -44,8 +44,8 @@ export const PLANS: PlanDefinition[] = [
     icon: 'diamond',
     accent: 'gold',
     durationDays: 30,
-    tagline: 'Un mes sin preocuparte por el cupo.',
-    adds: ['Historias casi sin límite por día', 'Deshacer pass ilimitado', '3 Super Sparks por mes', '1 Reactivar match por mes'],
+    tagline: 'Un mes sin tope de historias.',
+    adds: ['Historias sin límite por día', 'Deshacer pass ilimitado', '3 Super Sparks por mes', '1 Reactivar match por mes'],
   },
   {
     key: 'MEMBERSHIP_FOUNDING',
@@ -132,7 +132,7 @@ export interface ComparisonRow {
 export const COMPARISON_ROWS: ComparisonRow[] = [
   {
     label: 'Historias por día',
-    values: { STANDARD: 'Cupo base', PREMIUM: '+20 extra', VIP: 'Casi sin límite', FOUNDING: 'Casi sin límite' },
+    values: { STANDARD: '20', PREMIUM: '40', VIP: 'Sin límite', FOUNDING: 'Sin límite' },
   },
   { label: 'Perfil destacado en Descubrir', values: { STANDARD: false, PREMIUM: true, VIP: true, FOUNDING: true } },
   {
@@ -183,6 +183,14 @@ export const CONTEXTUAL_HINT: Record<string, string> = {
   SUPER_INVITE: 'Se usa desde Descubrir, al enviar una invitación destacada.',
   REACTIVATE_MATCH: 'Se usa desde Matches, en "Se enfriaron".',
 };
+
+/** Planes sin tope diario de historias (unlimitedDiscover en el backend). */
+export const UNLIMITED_DISCOVER_TIERS: readonly MembershipTier[] = ['VIP', 'FOUNDING'];
+
+/** Poderes que el plan actual vuelve inútiles: con historias sin límite, comprar extra es cobrar por nada. */
+export function powerRedundantForTier(itemKey: string, tier: MembershipTier): boolean {
+  return itemKey === 'EXTRA_PROFILES' && UNLIMITED_DISCOVER_TIERS.includes(tier);
+}
 
 export function isMembershipItem(item: ShopItem): boolean {
   return item.key.startsWith('MEMBERSHIP_');

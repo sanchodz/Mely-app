@@ -28,7 +28,7 @@ No se tocaron contratos de API, la paleta ni Descubrir, Matches o Chats.
 
 | Beneficio | Gratis | Plus (7 d) | Gold (30 d) | Black (90 d) |
 |---|---|---|---|---|
-| Historias por día | cupo base | +20 | casi sin límite | casi sin límite |
+| Historias por día | 20 | 40 | sin límite | sin límite |
 | Perfil destacado | — | ✓ | ✓ | ✓ |
 | Ver quién te dio like | con coins | ✓ | ✓ | ✓ |
 | Boost | con coins | 1/semana | 1/semana | 1/semana |
@@ -39,6 +39,20 @@ No se tocaron contratos de API, la paleta ni Descubrir, Matches o Chats.
 | Coins de bienvenida | — | — | — | 300 |
 | Sello Black y temas de chat | — | — | — | ✓ |
 | Bono diario | ✓ | ✓ | ✓ | ✓ |
+
+## Descubrir: cupo y like obligatorio
+
+- **Cupo diario** (backend `dailyDiscoverLimit` + `membershipDiscoverBonus`): Gratis 20,
+  Plus 40, Gold y Black sin límite (`unlimitedDiscover` en `membershipPerks.ts`). Con
+  `quota.unlimited` el contador dice "Sin límite" y la Tienda oculta "Perfiles extra"
+  (el backend también rechaza esa compra con `ALREADY_UNLIMITED`).
+- **Like obligatorio**: después de `maxConsecutivePasses` (10) pases seguidos, el
+  backend rechaza el pase con `LIKE_REQUIRED` hasta un like o Super Spark. En la UI,
+  a partir de 3 pases restantes aparece un aviso; al llegar a 0 el botón de pasar se
+  bloquea (y el swipe a la izquierda vuelve la carta). Aplica a todos los planes.
+- **Sin perfiles** (`OutOfProfilesView`): animación del mazo que se vacía y sugiere
+  escribirle a los matches, primero los que no tienen charla. Ofrece ampliar el cupo
+  solo en los planes con tope.
 
 ⚠️ **Dependencia**: esta matriz vive en `src/components/store/storeCatalog.ts` y tiene
 que coincidir con `MEMBERSHIP_PERKS` y `membershipDiscoverBonus` del backend. El

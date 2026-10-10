@@ -11,7 +11,7 @@ import type { ShopItem } from '../types';
 import { Skeleton } from './ui/skeleton';
 import { ErrorState } from './StateViews';
 import { cn } from '../lib/utils';
-import { isMembershipItem, minutesLeft, perkLabel, planForKey } from './store/storeCatalog';
+import { isMembershipItem, minutesLeft, perkLabel, planForKey, powerRedundantForTier } from './store/storeCatalog';
 import { Icon, tone } from './store/storeUi';
 import { CurrentPlanPanel } from './store/CurrentPlanPanel';
 import { PlansSection } from './store/PlansSection';
@@ -72,7 +72,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes }) => {
   const selectedIncluded = selectedItem ? perkLabel(perkFor(selectedItem.key)) !== null : false;
 
   const memberships = shopItems.filter(isMembershipItem);
-  const powers = shopItems.filter((i) => !isMembershipItem(i));
+  const powers = shopItems.filter((i) => !isMembershipItem(i) && !powerRedundantForTier(i.key, membershipTier));
 
   const celebrate = () => {
     try {

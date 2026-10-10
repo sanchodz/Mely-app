@@ -2,7 +2,7 @@ import React from 'react';
 import type { MeProfile, PerkStatus, ShopItem } from '../../types';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
-import { formatShortDate, perkDetail, planForTier, TIER_SHORT_NAME } from './storeCatalog';
+import { formatShortDate, perkDetail, planForTier, TIER_SHORT_NAME, UNLIMITED_DISCOVER_TIERS } from './storeCatalog';
 import { Coins, Icon, tone } from './storeUi';
 
 interface CurrentPlanPanelProps {
@@ -42,11 +42,15 @@ export const CurrentPlanPanel: React.FC<CurrentPlanPanelProps> = ({
         : 'Activo, sin vencimiento.';
 
   // Solo lo que hoy se puede usar sin pagar: ilimitado o con cupo restante.
-  const included = (perks?.items ?? []).flatMap((p) => {
-    const name = shopItems.find((i) => i.key === p.itemKey)?.name;
-    const detail = perkDetail(p);
-    return name && detail ? [{ name, detail }] : [];
-  });
+  const included = [
+    // Historias sin tope: no es un poder de la tienda, así que no viene en /shop/perks.
+    ...(UNLIMITED_DISCOVER_TIERS.includes(tier) ? [{ name: 'Historias por día', detail: 'sin límite' }] : []),
+    ...(perks?.items ?? []).flatMap((p) => {
+      const name = shopItems.find((i) => i.key === p.itemKey)?.name;
+      const detail = perkDetail(p);
+      return name && detail ? [{ name, detail }] : [];
+    }),
+  ];
   const multiplier = perks?.dateRewardMultiplier ?? 1;
 
   return (

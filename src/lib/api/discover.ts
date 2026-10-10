@@ -7,6 +7,13 @@ export type DiscoverQuota = {
   limit: number;
   remaining: number;
   resetsAt: string;
+  /** Gold y Black: sin tope diario (limit/remaining son de relleno para apps viejas). */
+  unlimited?: boolean;
+  /** PASS seguidos desde el último like. */
+  passStreak?: number;
+  /** Pases seguidos permitidos antes de exigir un like (0 = sin regla). */
+  maxConsecutivePasses?: number;
+  likeRequired?: boolean;
 };
 
 export type SwipeResult = {
