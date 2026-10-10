@@ -234,22 +234,6 @@ export interface UserSettings {
   notifyNewMessages: boolean;
 }
 
-export interface StoreItem {
-  id: string;
-  name: string;
-  category: 'coins' | 'boosts' | 'vip' | 'experiences';
-  /** key real: CoinPack.key para 'coins', ShopItem.key para el resto */
-  backendKey: string;
-  priceCoins?: number;
-  priceMoney?: string;
-  badge?: string;
-  description: string;
-  icon: string;
-  highlightColor?: string;
-  popular?: boolean;
-  perks?: string[];
-}
-
 export interface IcebreakerQuestion {
   id: string;
   category: 'profunda' | 'divertida' | 'citas' | 'dilemas';
