@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { MembershipTier, ShopItem } from '../../types';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
@@ -14,17 +14,20 @@ import {
   TIER_RANK,
   TIER_SHORT_NAME,
 } from './storeCatalog';
-import { accentText, accentTile, Coins, Icon, SectionTitle, tone } from './storeUi';
+import { trackStore } from './storeAnalytics';
+import { accentTile, Coins, Icon, Pill, SectionTitle, tone } from './storeUi';
 
 interface PlansSectionProps {
   items: ShopItem[];
   currentTier: MembershipTier;
   /** El plan actual no vence (Black "para siempre" de antes): no hay nada que renovar. */
   currentIsLifetime: boolean;
-  onSelect: (item: ShopItem) => void;
+  balance: number;
+  onSelect: (item: ShopItem, source: 'featured' | 'card') => void;
 }
 
 type PlanState = 'current' | 'lifetime' | 'lower' | 'available';
+type Savings = { coins: number; percent: number } | null;
 
 function planState(plan: PlanDefinition, currentTier: MembershipTier, currentIsLifetime: boolean): PlanState {
   if (plan.tier === currentTier) return currentIsLifetime ? 'lifetime' : 'current';
@@ -33,7 +36,7 @@ function planState(plan: PlanDefinition, currentTier: MembershipTier, currentIsL
   return 'available';
 }
 
-function ctaLabel(plan: PlanDefinition, item: ShopItem, state: PlanState): string {
+function ctaLabel(plan: PlanDefinition, state: PlanState): string {
   switch (state) {
     case 'lower':
       return 'Ya tenés un plan superior';
@@ -42,7 +45,7 @@ function ctaLabel(plan: PlanDefinition, item: ShopItem, state: PlanState): strin
     case 'current':
       return `Renovar +${plan.durationDays} días`;
     default:
-      return `Obtener ${plan.shortName} · ${item.price.toLocaleString('es-AR')} coins`;
+      return `Elegir ${plan.shortName}`;
   }
 }
 
@@ -50,10 +53,10 @@ function ctaLabel(plan: PlanDefinition, item: ShopItem, state: PlanState): strin
 const PriceBlock: React.FC<{ plan: PlanDefinition; item: ShopItem; large?: boolean }> = ({ plan, item, large }) => {
   const perDay = coinsPerDay(item.price, plan.durationDays);
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-baseline gap-1.5">
-        <Coins amount={item.price} className={cn('font-bold', large ? 'text-[30px]' : 'text-[22px]', tone.strong)} />
-        <span className={cn('text-[13px]', tone.muted)}>/ {plan.durationDays} días</span>
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        <Coins amount={item.price} className={cn('font-bold tracking-tight', large ? 'text-[32px]' : 'text-[24px]', tone.strong)} />
+        <span className={cn('text-[13px]', tone.muted)}>por {plan.durationDays} días</span>
       </div>
       <span className={cn('text-[12px]', tone.muted)}>
         {perDay !== null && <>≈ {perDay.toLocaleString('es-AR')} coins por día</>}
@@ -63,147 +66,162 @@ const PriceBlock: React.FC<{ plan: PlanDefinition; item: ShopItem; large?: boole
   );
 };
 
-const BenefitList: React.FC<{ plan: PlanDefinition; inheritsFrom?: string }> = ({ plan, inheritsFrom }) => (
-  <div className="flex flex-col gap-2">
-    {inheritsFrom && <p className={cn('text-[12px] font-semibold', tone.muted)}>Todo lo de {inheritsFrom}, y además:</p>}
-    <ul className="flex flex-col gap-2">
-      {plan.adds.map((benefit) => (
-        <li key={benefit} className={cn('flex items-start gap-2 text-[13.5px] leading-snug', tone.strong)}>
-          <Icon name="check_circle" filled className={cn('text-[17px] mt-px shrink-0', accentText(plan.accent))} />
-          <span>{benefit}</span>
+/** Saldo frente a precio, dicho antes de abrir la confirmación. */
+const Affordability: React.FC<{ price: number; balance: number }> = ({ price, balance }) => {
+  const missing = price - balance;
+  return missing <= 0 ? (
+    <Pill tone="ok" icon="check">
+      Te alcanza con tu saldo
+    </Pill>
+  ) : (
+    <Pill tone="neutral" icon="account_balance_wallet">
+      Te faltan {missing.toLocaleString('es-AR')} coins
+    </Pill>
+  );
+};
+
+/** Beneficio = qué es + para qué te sirve. El "para qué" es lo que se vende. */
+const BenefitList: React.FC<{ plan: PlanDefinition; inheritsFrom?: string; heading?: string }> = ({ plan, inheritsFrom, heading }) => (
+  <div className="flex flex-col gap-3">
+    {(heading || inheritsFrom) && (
+      <p className={cn('text-[11.5px] font-semibold uppercase tracking-[0.12em]', tone.muted)}>
+        {heading ?? `Todo lo de ${inheritsFrom}, y además`}
+      </p>
+    )}
+    <ul className="flex flex-col gap-3">
+      {plan.benefits.map((b) => (
+        <li key={b.title} className="flex items-start gap-3">
+          <span className={cn('w-8 h-8 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0', accentTile(plan.accent))}>
+            <Icon name={b.icon} filled className="text-[17px]" />
+          </span>
+          <span className="min-w-0 pt-0.5">
+            <span className={cn('block text-[13.5px] font-bold leading-snug', tone.strong)}>{b.title}</span>
+            <span className={cn('block text-[12.5px] leading-snug mt-0.5', tone.muted)}>{b.outcome}</span>
+          </span>
         </li>
       ))}
     </ul>
   </div>
 );
 
-/**
- * Plan recomendado: el siguiente escalón sobre el plan actual, explicado como
- * "qué suma a lo que ya tenés". No hay "más popular" ni urgencia: no tenemos
- * datos que lo respalden.
- */
-const NextStepSpotlight: React.FC<{
-  plan: PlanDefinition;
-  item: ShopItem;
-  currentTier: MembershipTier;
-  savings: { coins: number; percent: number } | null;
-  onSelect: (item: ShopItem) => void;
-}> = ({ plan, item, currentTier, savings, onSelect }) => {
-  const isGold = plan.accent === 'gold';
-  return (
-    <section
-      aria-labelledby="next-step-title"
-      className={cn(
-        'relative overflow-hidden rounded-[var(--radius-lg)] border-2 p-5 flex flex-col gap-4 shadow-elevation-md',
-        tone.surface,
-        isGold ? 'border-amber-400/70 dark:border-amber-300/50' : 'border-[var(--coral-500)]/70',
-      )}
-    >
-      <div
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl opacity-40',
-          isGold ? 'bg-amber-300/50' : 'bg-[var(--coral-300)]/50',
-        )}
-      />
-      <div className="relative flex items-start gap-3">
-        <div className={cn('w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center shrink-0', accentTile(plan.accent))}>
-          <Icon name={plan.icon} filled className="text-[26px]" />
-        </div>
-        <div className="min-w-0">
-          <span className="section-kicker block mb-1">Tu próximo paso</span>
-          <h3
-            id="next-step-title"
-            className={cn('text-[24px] leading-tight italic font-semibold', tone.strong)}
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            {item.name}
-          </h3>
-          <p className={cn('text-[13px] mt-1', tone.muted)}>{plan.tagline}</p>
-        </div>
-      </div>
-
-      <div className="relative flex flex-col gap-2">
-        <p className={cn('text-[12px] font-semibold uppercase tracking-[0.12em]', tone.muted)}>
-          {currentTier === 'STANDARD' ? 'Lo que suma a tu cuenta' : `Lo que suma a tu ${TIER_SHORT_NAME[currentTier]}`}
-        </p>
-        <BenefitList plan={plan} />
-      </div>
-
-      <div className={cn('relative flex flex-col gap-3 pt-4 border-t', tone.divider)}>
-        <div className="flex items-end justify-between gap-3 flex-wrap">
-          <PriceBlock plan={plan} item={item} large />
-          {savings && plan.tier === 'FOUNDING' && <SavingsTag savings={savings} />}
-        </div>
-        <Button size="lg" onClick={() => onSelect(item)} className="w-full rounded-[var(--radius-pill)] h-12 gap-1.5">
-          Obtener {plan.shortName}
-          <Icon name="arrow_forward" className="text-[18px]" />
-        </Button>
-        <p className={cn('text-[12px] text-center', tone.muted)}>
-          Se paga con coins. Vence a los {plan.durationDays} días y no se renueva solo.
-        </p>
-      </div>
-    </section>
-  );
-};
-
-const SavingsTag: React.FC<{ savings: { coins: number; percent: number } }> = ({ savings }) => (
-  <span className="inline-flex items-center gap-1 rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
-    <Icon name="savings" className="text-[15px]" />
+const SavingsTag: React.FC<{ savings: NonNullable<Savings> }> = ({ savings }) => (
+  <Pill tone="ok" icon="savings" className="py-1.5 leading-snug">
     Ahorrás {savings.coins.toLocaleString('es-AR')} coins ({savings.percent}%) vs. 3 meses de Gold
-  </span>
+  </Pill>
 );
 
+/**
+ * Una sola tarjeta para todos los planes. La destacada es el siguiente escalón
+ * sobre tu plan (nunca un "más popular" sin datos): en mobile sube primera y
+ * se agranda; en desktop queda en su lugar de la escalera, resaltada.
+ */
 const PlanCard: React.FC<{
   plan: PlanDefinition;
   item: ShopItem;
   state: PlanState;
-  savings: { coins: number; percent: number } | null;
-  onSelect: (item: ShopItem) => void;
-}> = ({ plan, item, state, savings, onSelect }) => {
+  featured: boolean;
+  currentTier: MembershipTier;
+  savings: Savings;
+  balance: number;
+  onSelect: (item: ShopItem, source: 'featured' | 'card') => void;
+}> = ({ plan, item, state, featured, currentTier, savings, balance, onSelect }) => {
   const isCurrent = state === 'current' || state === 'lifetime';
+  const isGold = plan.accent === 'gold';
   const prev = previousPlan(plan);
+  const headingId = `plan-${plan.tier}-title`;
+  // En la destacada se cuenta lo que suma a TU plan; en el resto, la herencia de la escalera.
+  const benefitHeading = featured
+    ? currentTier === 'STANDARD'
+      ? 'Lo que suma a tu cuenta'
+      : `Lo que suma a tu ${TIER_SHORT_NAME[currentTier]}`
+    : undefined;
+
   return (
     <article
-      aria-label={`Plan ${plan.shortName}`}
+      aria-labelledby={headingId}
       className={cn(
-        'relative rounded-[var(--radius-lg)] border p-4 flex flex-col gap-4',
+        'relative overflow-hidden rounded-[var(--radius-lg)] border flex flex-col gap-5 transition-shadow',
         tone.surface,
+        featured
+          ? cn(
+              'order-first lg:order-none p-5 sm:p-6 border-2 shadow-elevation-md',
+              isGold ? 'border-amber-400/70 dark:border-amber-300/50' : 'border-[var(--coral-500)]/70',
+            )
+          : 'p-5 shadow-elevation-sm',
         isCurrent && 'border-2 border-emerald-500/70 dark:border-emerald-400/50',
-        state === 'lower' && 'opacity-70',
+        // En mobile, un plan inferior al tuyo no compite con tu plan ni con la recomendación.
+        state === 'lower' && 'opacity-70 order-last lg:order-none',
       )}
     >
-      <header className="flex items-start gap-3">
-        <div className={cn('w-10 h-10 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0', accentTile(plan.accent))}>
-          <Icon name={plan.icon} filled className="text-[22px]" />
+      {featured && (
+        <div
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none absolute -top-20 -right-20 w-56 h-56 rounded-full blur-3xl opacity-40',
+            isGold ? 'bg-amber-300/50' : 'bg-[var(--coral-300)]/50',
+          )}
+        />
+      )}
+
+      <header className="relative flex items-start gap-3">
+        <div
+          className={cn(
+            'rounded-[var(--radius-md)] flex items-center justify-center shrink-0',
+            featured ? 'w-12 h-12' : 'w-10 h-10',
+            accentTile(plan.accent),
+          )}
+        >
+          <Icon name={plan.icon} filled className={featured ? 'text-[26px]' : 'text-[22px]'} />
         </div>
         <div className="min-w-0 flex-1">
+          {featured && <span className="section-kicker block mb-1.5">Tu próximo paso</span>}
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className={cn('text-[17px] font-bold', tone.strong)}>{item.name}</h4>
+            <h4
+              id={headingId}
+              className={cn('italic font-semibold leading-tight', featured ? 'text-[24px]' : 'text-[20px]', tone.strong)}
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              {item.name}
+            </h4>
             {isCurrent && (
-              <span className="inline-flex items-center gap-0.5 rounded-[var(--radius-pill)] px-2 py-0.5 text-[11px] font-bold bg-emerald-500 text-white">
-                <Icon name="check" className="text-[13px]" />
+              <Pill tone="ok" icon="check" className="px-2 py-0.5 text-[11px]">
                 Tu plan
-              </span>
+              </Pill>
             )}
           </div>
-          <p className={cn('text-[12.5px] mt-0.5', tone.muted)}>{plan.tagline}</p>
+          <p className={cn('text-[13px] mt-1 leading-snug', tone.muted)}>{plan.tagline}</p>
         </div>
       </header>
 
-      <PriceBlock plan={plan} item={item} />
-      {savings && plan.tier === 'FOUNDING' && <SavingsTag savings={savings} />}
+      <div className="relative flex flex-col gap-2.5">
+        <PriceBlock plan={plan} item={item} large={featured} />
+        <div className="flex flex-wrap gap-1.5">
+          {state === 'available' && <Affordability price={item.price} balance={balance} />}
+          {savings && plan.tier === 'FOUNDING' && <SavingsTag savings={savings} />}
+        </div>
+      </div>
 
-      <BenefitList plan={plan} inheritsFrom={prev?.shortName} />
+      <div className={cn('relative pt-5 border-t', tone.divider)}>
+        <BenefitList plan={plan} inheritsFrom={prev?.shortName} heading={benefitHeading} />
+      </div>
 
-      <Button
-        variant={state === 'available' ? 'primary' : 'secondary'}
-        disabled={state === 'lower' || state === 'lifetime'}
-        onClick={() => onSelect(item)}
-        className="w-full mt-auto rounded-[var(--radius-pill)]"
-      >
-        {ctaLabel(plan, item, state)}
-      </Button>
+      <div className="relative mt-auto flex flex-col gap-2">
+        <Button
+          size={featured ? 'lg' : 'default'}
+          variant={state === 'available' ? 'primary' : 'secondary'}
+          disabled={state === 'lower' || state === 'lifetime'}
+          onClick={() => onSelect(item, featured ? 'featured' : 'card')}
+          className={cn('w-full rounded-[var(--radius-pill)] gap-1.5', featured && 'h-12')}
+        >
+          {ctaLabel(plan, state)}
+          {state === 'available' && <Icon name="arrow_forward" className="text-[18px]" />}
+        </Button>
+        {featured && (
+          <p className={cn('text-[12px] text-center', tone.muted)}>
+            Se paga con coins. Vence a los {plan.durationDays} días y no se renueva solo.
+          </p>
+        )}
+      </div>
     </article>
   );
 };
@@ -233,8 +251,24 @@ const TABLE_TIERS: MembershipTier[] = ['STANDARD', 'PREMIUM', 'VIP', 'FOUNDING']
 /** Tabla real (no tarjetas sueltas) para comparar de un vistazo. Entra entera desde 360px; más angosto, scroll con la 1.ª columna fija. */
 const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<MembershipTier> }> = ({ currentTier, offered }) => {
   const tiers = TABLE_TIERS.filter((t) => t === 'STANDARD' || offered.has(t));
+  const ref = useRef<HTMLElement>(null);
+
+  // Medimos si la gente llega a comparar: es la señal de que la decisión no fue obvia.
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        trackStore({ name: 'store_compare_viewed' });
+        observer.disconnect();
+      }
+    }, { threshold: 0.4 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="compare-title">
+    <section ref={ref} className="flex flex-col gap-3" aria-labelledby="compare-title">
       <div id="compare-title">
         <SectionTitle kicker="Sin letra chica" title="Compará los planes" />
       </div>
@@ -243,7 +277,7 @@ const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<Membe
           <caption className="sr-only">Beneficios incluidos en cada plan</caption>
           <thead>
             <tr>
-              <th scope="col" className={cn('sticky left-0 z-10 w-[30%] px-2 py-3 sm:p-3 text-[11px] font-semibold uppercase tracking-[0.1em]', tone.muted, tone.surface)}>
+              <th scope="col" className={cn('sticky left-0 z-10 w-[30%] lg:w-[34%] px-2 py-3 sm:p-3 lg:px-5 text-[11px] font-semibold uppercase tracking-[0.1em]', tone.muted, tone.surface)}>
                 Beneficio
               </th>
               {tiers.map((t) => (
@@ -264,7 +298,7 @@ const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<Membe
           <tbody>
             {COMPARISON_ROWS.map((row) => (
               <tr key={row.label} className={cn('border-t', tone.divider)}>
-                <th scope="row" className={cn('sticky left-0 z-10 px-2.5 py-3 sm:p-3 text-[12.5px] font-semibold leading-snug', tone.strong, tone.surface)}>
+                <th scope="row" className={cn('sticky left-0 z-10 px-2.5 py-3 sm:p-3 lg:px-5 text-[12.5px] font-semibold leading-snug', tone.strong, tone.surface)}>
                   {row.label}
                 </th>
                 {tiers.map((t) => (
@@ -293,45 +327,40 @@ const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<Membe
   );
 };
 
-export const PlansSection: React.FC<PlansSectionProps> = ({ items, currentTier, currentIsLifetime, onSelect }) => {
+export const PlansSection: React.FC<PlansSectionProps> = ({ items, currentTier, currentIsLifetime, balance, onSelect }) => {
   const offered = PLANS.flatMap((plan) => {
     const item = items.find((i) => i.key === plan.key);
     return item ? [{ plan, item }] : [];
   });
   const nextStep = nextStepPlan(currentTier, items);
-  const nextStepItem = nextStep ? items.find((i) => i.key === nextStep.key) : undefined;
   const savings = blackSavings(items);
-  const rest = offered.filter(({ plan }) => plan.key !== nextStep?.key);
 
   return (
-    <div className="flex flex-col gap-7">
-      {nextStep && nextStepItem && (
-        <NextStepSpotlight plan={nextStep} item={nextStepItem} currentTier={currentTier} savings={savings} onSelect={onSelect} />
-      )}
-
+    <div className="flex flex-col gap-8">
       {currentTier === 'FOUNDING' && (
         <p className={cn('rounded-[var(--radius-md)] p-4 text-[13px] leading-relaxed', tone.sunken, tone.strong)}>
           Tenés el plan más completo de FINDY. Abajo ves todo lo que incluye y, si querés, podés renovarlo.
         </p>
       )}
 
-      {rest.length > 0 && (
-        <section className="flex flex-col gap-3" aria-label={nextStep ? 'Otros planes' : 'Planes'}>
-          <SectionTitle title={nextStep ? 'Otros planes' : 'Planes'} />
-          <div className="grid gap-3 md:grid-cols-2">
-            {rest.map(({ plan, item }) => (
-              <PlanCard
-                key={plan.key}
-                plan={plan}
-                item={item}
-                state={planState(plan, currentTier, currentIsLifetime)}
-                savings={savings}
-                onSelect={onSelect}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <section className="flex flex-col gap-3" aria-label="Planes">
+        {/* Mobile: la destacada primero (order-first). Desktop: Plus → Gold → Black en fila. */}
+        <div className={cn('grid gap-4 items-stretch', offered.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2')}>
+          {offered.map(({ plan, item }) => (
+            <PlanCard
+              key={plan.key}
+              plan={plan}
+              item={item}
+              state={planState(plan, currentTier, currentIsLifetime)}
+              featured={plan.key === nextStep?.key}
+              currentTier={currentTier}
+              savings={savings}
+              balance={balance}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      </section>
 
       <PlanComparison currentTier={currentTier} offered={new Set(offered.map(({ plan }) => plan.tier))} />
     </div>

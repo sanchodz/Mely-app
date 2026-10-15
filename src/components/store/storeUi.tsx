@@ -17,7 +17,6 @@ export const tone = {
   divider: 'border-[var(--coral-100)] dark:border-[var(--hairline)]',
 } as const;
 
-export const accentText = (accent: 'coral' | 'gold') => (accent === 'gold' ? tone.gold : tone.accent);
 
 export const accentTile = (accent: 'coral' | 'gold') =>
   accent === 'gold'
@@ -52,5 +51,31 @@ export const Coins: React.FC<{ amount: number; className?: string; iconClassName
   <span className={cn('inline-flex items-center gap-1 tabular-nums', className)}>
     <Icon name="monetization_on" filled className={cn('text-[1.05em] text-[var(--coral-600)] dark:text-[var(--coral-300)]', iconClassName)} />
     {amount.toLocaleString('es-AR')}
+  </span>
+);
+
+/** Indicador de carga en línea (botones, filas). Respeta reduced-motion vía motion-safe. */
+export const Spinner: React.FC<{ className?: string }> = ({ className }) => (
+  <Icon name="progress_activity" className={cn('motion-safe:animate-spin', className)} />
+);
+
+/** Pastilla de estado — verde = ya es tuyo / te alcanza; dorado = valor; neutra = dato. */
+export const Pill: React.FC<{ tone: 'ok' | 'gold' | 'neutral'; icon?: string; children: React.ReactNode; className?: string }> = ({
+  tone: pillTone,
+  icon,
+  children,
+  className,
+}) => (
+  <span
+    className={cn(
+      'inline-flex items-center gap-1 rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-bold leading-none',
+      pillTone === 'ok' && 'bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300',
+      pillTone === 'gold' && 'bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300',
+      pillTone === 'neutral' && 'bg-[var(--color-canvas)] text-[var(--text-on-light-muted)] dark:bg-[var(--midnight-950)] dark:text-[var(--text-secondary)]',
+      className,
+    )}
+  >
+    {icon && <Icon name={icon} className="text-[14px]" />}
+    {children}
   </span>
 );

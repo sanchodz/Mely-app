@@ -350,6 +350,14 @@
     }
   }
 
+  /* La Tienda compara opciones lado a lado: en desktop usa un lienzo propio
+     (planes en tres columnas) en vez de estirar la columna mobile. */
+  @media (min-width: 1024px) {
+    .app-page.app-page--wide {
+      max-width: 1040px;
+    }
+  }
+
   /* Foco visible global con el halo de marca (respeta los rings puntuales). */
   :where(button, a, input, textarea, select, [tabindex]):focus-visible {
     outline: 2px solid var(--focus-ring);

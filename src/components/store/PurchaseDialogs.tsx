@@ -3,12 +3,13 @@ import type { MembershipTier, ShopItem } from '../../types';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
 import { cn } from '../../lib/utils';
-import { planForKey, POWER_PRESENTATION, previousPlan } from './storeCatalog';
-import { accentTile, Coins, Icon, tone } from './storeUi';
+import { planEndDate, planForKey, POWER_PRESENTATION, previousPlan } from './storeCatalog';
+import { accentTile, Coins, Icon, Spinner, tone } from './storeUi';
 
 interface PurchaseDialogProps {
   item: ShopItem | null;
   currentTier: MembershipTier;
+  currentExpiresAt: string | null;
   balance: number;
   /** El ítem sale gratis por el cupo del plan actual. */
   includedInPlan: boolean;
@@ -26,6 +27,7 @@ interface PurchaseDialogProps {
 export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
   item,
   currentTier,
+  currentExpiresAt,
   balance,
   includedInPlan,
   pending,
@@ -41,6 +43,9 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
   const icon = plan?.icon ?? (item ? POWER_PRESENTATION[item.key]?.icon : undefined) ?? 'shopping_bag';
   const accent = plan?.accent ?? (item ? POWER_PRESENTATION[item.key]?.accent : undefined) ?? 'coral';
   const prev = plan ? previousPlan(plan) : undefined;
+  const endsOn = plan
+    ? planEndDate(plan, currentTier, currentExpiresAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
 
   return (
     <Dialog open={Boolean(item)} onOpenChange={(open) => !open && onClose()}>
@@ -75,10 +80,10 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
                       Todo lo de {prev.shortName}
                     </li>
                   )}
-                  {plan.adds.map((b) => (
-                    <li key={b} className={cn('flex items-start gap-2 text-[13px]', tone.strong)}>
+                  {plan.benefits.map((b) => (
+                    <li key={b.title} className={cn('flex items-start gap-2 text-[13px]', tone.strong)}>
                       <Icon name="check" className="text-[16px] mt-px text-emerald-500 shrink-0" />
-                      {b}
+                      {b.title}
                     </li>
                   ))}
                 </ul>
@@ -93,6 +98,12 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
                   {includedInPlan ? 'Incluido en tu plan' : <Coins amount={item.price} />}
                 </dd>
               </div>
+              {endsOn && (
+                <div className="flex justify-between gap-3">
+                  <dt className={tone.muted}>{isRenewal ? 'Nuevo vencimiento' : 'Vence el'}</dt>
+                  <dd className={cn('font-semibold text-right', tone.strong)}>{endsOn}</dd>
+                </div>
+              )}
               <div className="flex justify-between gap-3">
                 <dt className={tone.muted}>Tu saldo</dt>
                 <dd className={tone.strong}>
@@ -116,7 +127,7 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
             )}
 
             <div className="p-5 grid grid-cols-2 gap-2">
-              <Button variant="secondary" onClick={onClose} className="rounded-[var(--radius-pill)]">
+              <Button variant="secondary" onClick={onClose} disabled={pending} className="rounded-[var(--radius-pill)]">
                 Cancelar
               </Button>
               {shortfall > 0 ? (
@@ -124,8 +135,9 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
                   Conseguir coins
                 </Button>
               ) : (
-                <Button onClick={onConfirm} disabled={pending} className="rounded-[var(--radius-pill)] gap-1">
-                  {pending ? 'Procesando…' : includedInPlan ? 'Usar' : 'Confirmar'}
+                <Button onClick={onConfirm} disabled={pending} aria-busy={pending} className="rounded-[var(--radius-pill)] gap-1.5">
+                  {pending && <Spinner className="text-[16px]" />}
+                  {pending ? 'Procesando…' : includedInPlan ? 'Usar ahora' : 'Confirmar'}
                 </Button>
               )}
             </div>
@@ -136,7 +148,14 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
   );
 };
 
-export const ReceiptDialog: React.FC<{ receipt: string | null; onClose: () => void }> = ({ receipt, onClose }) => (
+/** Qué pasó y, si tiene sentido, adónde ir a usarlo. */
+export interface Receipt {
+  title: string;
+  detail: string;
+  action?: { label: string; icon: string; onClick: () => void };
+}
+
+export const ReceiptDialog: React.FC<{ receipt: Receipt | null; onClose: () => void }> = ({ receipt, onClose }) => (
   <Dialog open={Boolean(receipt)} onOpenChange={(open) => !open && onClose()}>
     <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] text-center flex flex-col items-center gap-4">
       <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[var(--coral-600)] to-[var(--coral-500)] flex items-center justify-center text-white shadow-[var(--shadow-coral)]">
@@ -144,12 +163,20 @@ export const ReceiptDialog: React.FC<{ receipt: string | null; onClose: () => vo
       </div>
       <div>
         <span className="section-kicker block">Listo</span>
-        <DialogTitle className={cn('text-[19px] font-bold mt-2', tone.strong)}>{receipt}</DialogTitle>
-        <DialogDescription className={cn('text-[13px] mt-1', tone.muted)}>Ya está disponible en tu cuenta.</DialogDescription>
+        <DialogTitle className={cn('text-[19px] font-bold mt-2', tone.strong)}>{receipt?.title}</DialogTitle>
+        <DialogDescription className={cn('text-[13px] mt-1', tone.muted)}>{receipt?.detail}</DialogDescription>
       </div>
-      <Button onClick={onClose} className="w-full rounded-[var(--radius-pill)]">
-        Continuar
-      </Button>
+      <div className="w-full flex flex-col gap-2">
+        {receipt?.action && (
+          <Button onClick={receipt.action.onClick} className="w-full rounded-[var(--radius-pill)] gap-1.5">
+            {receipt.action.label}
+            <Icon name={receipt.action.icon} className="text-[18px]" />
+          </Button>
+        )}
+        <Button variant={receipt?.action ? 'secondary' : 'primary'} onClick={onClose} className="w-full rounded-[var(--radius-pill)]">
+          {receipt?.action ? 'Seguir en la tienda' : 'Continuar'}
+        </Button>
+      </div>
     </DialogContent>
   </Dialog>
 );
