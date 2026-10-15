@@ -439,7 +439,7 @@ function AppContent() {
               ? 'env(safe-area-inset-bottom)'
               : `calc(5.5rem + env(safe-area-inset-bottom))`,
         }}
-        className={`app-page ${isChatDetail ? '' : currentTab === 'mensajes' ? 'px-2 sm:px-3' : 'px-3 min-[380px]:px-4'} flex-1 flex flex-col min-h-0`}
+        className={`app-page ${currentTab === 'tienda' ? 'app-page--wide' : ''} ${isChatDetail ? '' : currentTab === 'mensajes' ? 'px-2 sm:px-3' : 'px-3 min-[380px]:px-4'} flex-1 flex flex-col min-h-0`}
       >
         {/* popLayout en vez de mode="wait": la pantalla que sale y la que entra
             se solapan (crossfade) en vez de dejar un hueco en blanco entre
@@ -520,7 +520,9 @@ function AppContent() {
               />
             )}
 
-            {currentTab === 'tienda' && <StoreView onOpenLikes={() => handleTabChange('likes')} />}
+            {currentTab === 'tienda' && (
+              <StoreView onOpenLikes={() => handleTabChange('likes')} onOpenDiscover={() => handleTabChange('descubrir')} />
+            )}
 
             {currentTab === 'citas' && (
               <DatesView

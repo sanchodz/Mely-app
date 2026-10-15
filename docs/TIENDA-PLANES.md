@@ -24,6 +24,59 @@ Orden de lectura nuevo, de arriba hacia abajo:
 
 No se tocaron contratos de API, la paleta ni Descubrir, Matches o Chats.
 
+## Ronda 2 (2026-10-14): de lista de features a decisión de compra
+
+- **Beneficio → resultado**: cada beneficio de plan dice qué es y para qué te sirve
+  (`PlanBenefit` en `storeCatalog.ts`). Mismos beneficios que antes, sin agregar ninguno.
+- **Una tarjeta para todos los planes**: la destacada (próximo paso) sube primera en
+  mobile; en desktop los tres planes van en fila (Plus → Gold → Black) y la tabla a lo ancho.
+  Un plan inferior al tuyo baja al final en mobile.
+- **Saldo frente a precio antes de decidir**: "Te alcanza con tu saldo" / "Te faltan N coins".
+- **Confirmación con fecha**: "Vence el …" o "Nuevo vencimiento" (renovar suma días).
+- **Poderes**: "para cuándo conviene" + "Incluido desde Gold: ilimitado →" leído de la
+  tabla comparativa (`includedFrom`, una sola fuente).
+- **Coins con valor**: cada paquete dice qué alcanza a comprar (plan o N usos del poder
+  más barato) y cuántas coins más por dólar da frente al más chico (solo si es > 0).
+- **Sin coins no se corta la compra**: "Conseguir coins" lleva a Coins con un aviso de
+  cuánto falta y marca el paquete más chico que lo cubre; al recargar, el recibo ofrece
+  "Continuar con <plan>" y reabre la confirmación.
+- **Recibo con destino**: después de comprar, "Ir a Descubrir" / "Ver quién te dio like".
+- **Estados**: saldo en skeleton (antes mostraba 0), skeleton/errores de paquetes e
+  historial (antes decía "sin movimientos" mientras cargaba), spinner por paquete,
+  canje y bono. Tabs con flechas/Inicio/Fin (patrón WAI-ARIA).
+- **Desktop**: la Tienda usa `.app-page--wide` (1040px desde 1024px) y el header la acompaña.
+
+## Analítica (instrumentada, sin proveedor)
+
+`src/components/store/storeAnalytics.ts` emite `window` `CustomEvent('findy:analytics')`
+sin datos personales. Falta conectar un proveedor.
+
+| Evento | Cuándo | Para medir |
+|---|---|---|
+| `store_viewed` | entrar a la tienda (con saldo cargado) | denominador de todo el embudo |
+| `store_tab_changed` | cambio de pestaña | qué decisión buscan |
+| `store_compare_viewed` | la tabla entra en pantalla | si la decisión no fue obvia |
+| `store_item_selected` | abrir confirmación (`source`: featured/card/power, `affordable`) | peso del "próximo paso" |
+| `store_purchase_confirmed` / `_succeeded` / `_failed` / `_cancelled` | confirmación | conversión y errores |
+| `store_insufficient_coins` | "Conseguir coins" | fricción por saldo |
+| `store_pack_selected` (`recommended`) / `store_recharge_succeeded` | recarga | valor de la recomendación de paquete |
+| `store_resume_after_recharge` | "Continuar con …" | recuperación de compras cortadas |
+| `store_daily_bonus_claimed` / `store_promo_redeemed` | ganar coins gratis | engagement |
+
+Métricas: `item_selected / viewed`, `purchase_succeeded / item_selected`,
+`resume_after_recharge / insufficient_coins`, ingreso en coins por usuario activo.
+
+## Experimentos propuestos
+
+1. **Pestaña inicial**: Planes (hoy) vs. Poderes para usuarios Gratis sin compras previas.
+   Métrica: primera compra en 7 días.
+2. **Resultado vs. feature**: beneficios con `outcome` (hoy) vs. solo título. Métrica: `item_selected / viewed`.
+3. **Paquete recomendado**: marcar el que cubre lo que falta (hoy) vs. no marcar. Métrica:
+   `resume_after_recharge / insufficient_coins`.
+4. **Black con ahorro arriba**: mostrar el ahorro real en la tarjeta destacada para usuarios Gold.
+
+Sin métricas reales no se puede afirmar que la conversión subió: estos son los cortes para saberlo.
+
 ## Matriz de beneficios (lo que muestra la UI)
 
 | Beneficio | Gratis | Plus (7 d) | Gold (30 d) | Black (90 d) |

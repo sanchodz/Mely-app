@@ -1,4 +1,4 @@
-import type { MembershipTier, PerkItemStatus, ShopItem } from '../../types';
+import type { CoinPack, MembershipTier, PerkItemStatus, ShopItem } from '../../types';
 
 /*
  * Catálogo de presentación de la Tienda — lo que el backend NO expone (íconos,
@@ -12,6 +12,13 @@ import type { MembershipTier, PerkItemStatus, ShopItem } from '../../types';
 
 export type PaidTier = Exclude<MembershipTier, 'STANDARD'>;
 
+/** Un beneficio contado como resultado: qué es y para qué te sirve en FINDY. */
+export interface PlanBenefit {
+  icon: string;
+  title: string;
+  outcome: string;
+}
+
 export interface PlanDefinition {
   key: string;
   tier: PaidTier;
@@ -23,7 +30,7 @@ export interface PlanDefinition {
   durationDays: number;
   tagline: string;
   /** Lo que suma este plan sobre el anterior (no repite lo heredado). */
-  adds: string[];
+  benefits: PlanBenefit[];
 }
 
 export const PLANS: PlanDefinition[] = [
@@ -35,7 +42,12 @@ export const PLANS: PlanDefinition[] = [
     accent: 'coral',
     durationDays: 7,
     tagline: 'Para probar una semana con más alcance.',
-    adds: ['Perfil destacado en Descubrir', 'Ver quién te dio like', '+20 historias extra por día', '1 Boost gratis por semana'],
+    benefits: [
+      { icon: 'star', title: 'Perfil destacado en Descubrir', outcome: 'Tu tarjeta se ve destacada cuando otros te descubren.' },
+      { icon: 'visibility', title: 'Ver quién te dio like', outcome: 'Respondés directo a quien ya mostró interés.' },
+      { icon: 'person_add', title: '+20 historias extra por día', outcome: 'Seguís conociendo gente cuando se termina el cupo base.' },
+      { icon: 'bolt', title: '1 Boost gratis por semana', outcome: 'Un empujón de visibilidad sin gastar coins.' },
+    ],
   },
   {
     key: 'MEMBERSHIP_VIP',
@@ -45,7 +57,12 @@ export const PLANS: PlanDefinition[] = [
     accent: 'gold',
     durationDays: 30,
     tagline: 'Un mes sin preocuparte por el cupo.',
-    adds: ['Historias casi sin límite por día', 'Deshacer pass ilimitado', '3 Super Sparks por mes', '1 Reactivar match por mes'],
+    benefits: [
+      { icon: 'all_inclusive', title: 'Historias casi sin límite por día', outcome: 'El cupo diario deja de ser un tope.' },
+      { icon: 'replay', title: 'Deshacer pass ilimitado', outcome: 'Si pasaste a alguien sin querer, lo recuperás.' },
+      { icon: 'auto_awesome', title: '3 Super Sparks por mes', outcome: 'Invitaciones destacadas para quien de verdad te interesa.' },
+      { icon: 'favorite', title: '1 Reactivar match por mes', outcome: 'Una segunda oportunidad con un match que se enfrió.' },
+    ],
   },
   {
     key: 'MEMBERSHIP_FOUNDING',
@@ -55,11 +72,11 @@ export const PLANS: PlanDefinition[] = [
     accent: 'gold',
     durationDays: 90,
     tagline: 'Tres meses, y tus citas reales rinden el doble.',
-    adds: [
-      'Doble de coins por cada cita verificada',
-      '300 coins de bienvenida',
-      'Sello exclusivo "Miembro Black" en tu pasaporte',
-      'Temas de chat exclusivos',
+    benefits: [
+      { icon: 'verified', title: 'Doble de coins por cada cita verificada', outcome: 'Cada cita real te devuelve el doble.' },
+      { icon: 'redeem', title: '300 coins de bienvenida', outcome: 'Arrancás con saldo para poderes sueltos.' },
+      { icon: 'military_tech', title: 'Sello exclusivo "Miembro Black"', outcome: 'Queda en tu pasaporte de conexiones.' },
+      { icon: 'palette', title: 'Temas de chat exclusivos', outcome: 'Tus conversaciones con otra estética.' },
     ],
   },
 ];
@@ -169,14 +186,37 @@ export const COMPARISON_ROWS: ComparisonRow[] = [
 
 /* ---------- Poderes ---------- */
 
-export const POWER_PRESENTATION: Record<string, { icon: string; accent: 'coral' | 'gold' }> = {
-  UNDO_PASS: { icon: 'replay', accent: 'coral' },
-  EXTRA_PROFILES: { icon: 'person_add', accent: 'coral' },
-  SUPER_INVITE: { icon: 'star', accent: 'gold' },
-  REACTIVATE_MATCH: { icon: 'favorite', accent: 'coral' },
-  BOOST: { icon: 'bolt', accent: 'gold' },
-  LIKES_UNLOCK: { icon: 'visibility', accent: 'coral' },
+export interface PowerPresentation {
+  icon: string;
+  accent: 'coral' | 'gold';
+  /** Cuándo conviene comprarlo — el uso práctico, no la mecánica. */
+  useCase: string;
+  /** Fila de COMPARISON_ROWS que dice desde qué plan viene incluido (una sola fuente). */
+  comparisonRow?: string;
+}
+
+export const POWER_PRESENTATION: Record<string, PowerPresentation> = {
+  UNDO_PASS: { icon: 'replay', accent: 'coral', useCase: 'Para cuando pasaste a alguien sin querer.', comparisonRow: 'Deshacer pass' },
+  EXTRA_PROFILES: { icon: 'person_add', accent: 'coral', useCase: 'Para seguir conociendo gente cuando se termina tu cupo del día.' },
+  SUPER_INVITE: { icon: 'star', accent: 'gold', useCase: 'Para que alguien que te interesa vea tu invitación primero.', comparisonRow: 'Super Spark' },
+  REACTIVATE_MATCH: { icon: 'favorite', accent: 'coral', useCase: 'Para retomar un match que se enfrió.', comparisonRow: 'Reactivar match' },
+  BOOST: { icon: 'bolt', accent: 'gold', useCase: 'Para que más gente vea tu perfil ahora.', comparisonRow: 'Boost' },
+  LIKES_UNLOCK: { icon: 'visibility', accent: 'coral', useCase: 'Para ver quién ya te dio like y responder directo.', comparisonRow: 'Ver quién te dio like' },
 };
+
+const PAID_TIERS: PaidTier[] = ['PREMIUM', 'VIP', 'FOUNDING'];
+
+/**
+ * Primer plan que incluye un poder, leído de la tabla comparativa (no de una
+ * copia aparte). "Con coins" o false = no incluido en ese plan.
+ */
+export function includedFrom(itemKey: string): { tier: PaidTier; value: ComparisonCell } | null {
+  const rowLabel = POWER_PRESENTATION[itemKey]?.comparisonRow;
+  const row = rowLabel ? COMPARISON_ROWS.find((r) => r.label === rowLabel) : undefined;
+  if (!row) return null;
+  const tier = PAID_TIERS.find((t) => row.values[t] !== false && row.values[t] !== 'Con coins');
+  return tier ? { tier, value: row.values[tier] } : null;
+}
 
 /** Poderes que no se activan desde la tienda sino en su contexto. */
 export const CONTEXTUAL_HINT: Record<string, string> = {
@@ -263,4 +303,54 @@ export function formatShortDate(iso: string | null): string | null {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return null;
   return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+}
+
+/* ---------- Valor de compra (aritmética con precios reales, nada inventado) ---------- */
+
+/** Fecha en que vence el plan si se compra hoy. Renovar suma días al vencimiento vigente. */
+export function planEndDate(plan: PlanDefinition, currentTier: MembershipTier, currentExpiresAt: string | null, now = new Date()): Date {
+  const current = currentExpiresAt ? new Date(currentExpiresAt) : null;
+  const base =
+    plan.tier === currentTier && current && Number.isFinite(current.getTime()) && current.getTime() > now.getTime() ? current : now;
+  return new Date(base.getTime() + plan.durationDays * 86_400_000);
+}
+
+/**
+ * Cuántas coins más por dólar da cada paquete frente al que menos rinde, en %.
+ * Solo aparece si es real (> 0): el paquete base nunca muestra "ahorro".
+ */
+export function packBonusPercent(packs: CoinPack[]): Record<string, number> {
+  const rates = packs.filter((p) => p.priceUsd > 0 && p.coins > 0).map((p) => ({ key: p.key, rate: p.coins / p.priceUsd }));
+  if (rates.length < 2) return {};
+  const base = Math.min(...rates.map((r) => r.rate));
+  return Object.fromEntries(
+    rates.flatMap(({ key, rate }) => {
+      const pct = Math.round((rate / base - 1) * 100);
+      return pct > 0 ? [[key, pct]] : [];
+    }),
+  );
+}
+
+export type PackEquivalent =
+  | { kind: 'plan'; plan: PlanDefinition; item: ShopItem }
+  | { kind: 'power'; item: ShopItem; count: number };
+
+/** Qué se consigue con un paquete: el plan más alto que alcanza o, si no, cuántos del poder más barato. */
+export function packEquivalent(coins: number, shopItems: ShopItem[]): PackEquivalent | null {
+  const plan = [...PLANS].reverse().find((p) => {
+    const item = shopItems.find((i) => i.key === p.key);
+    return item && item.price > 0 && item.price <= coins;
+  });
+  if (plan) return { kind: 'plan', plan, item: shopItems.find((i) => i.key === plan.key)! };
+  const cheapest = shopItems
+    .filter((i) => !isMembershipItem(i) && i.price > 0)
+    .sort((a, b) => a.price - b.price)[0];
+  const count = cheapest ? Math.floor(coins / cheapest.price) : 0;
+  return cheapest && count > 0 ? { kind: 'power', item: cheapest, count } : null;
+}
+
+/** El paquete más chico que cubre lo que falta. null si ninguno alcanza. */
+export function packForShortfall(packs: CoinPack[], shortfall: number): CoinPack | null {
+  if (shortfall <= 0) return null;
+  return [...packs].sort((a, b) => a.coins - b.coins).find((p) => p.coins >= shortfall) ?? null;
 }
