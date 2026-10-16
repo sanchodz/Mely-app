@@ -83,6 +83,10 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
   const tabRefs = useRef<Partial<Record<StoreTab, HTMLButtonElement | null>>>({});
 
   const walletBalance = wallet?.balance ?? 0;
+  // null hasta tener el saldo real: sin esto la tienda decía "te faltan" contra un 0.
+  const knownBalance = wallet ? wallet.balance : null;
+  const recommendedPackKey = (target: CoinTarget | null) =>
+    target && knownBalance !== null ? (packForShortfall(coinPacks, target.item.price - knownBalance)?.key ?? null) : null;
   const membershipTier = user?.membership.tier ?? 'STANDARD';
   // El Black "para siempre" de antes no vence: no hay nada que renovar.
   const currentIsLifetime = membershipTier !== 'STANDARD' && !user?.membership.expiresAt;
@@ -195,7 +199,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
   const handleRecharge = (pack: CoinPack) => {
     sounds.playCoins();
     setRechargingKey(pack.key);
-    trackStore({ name: 'store_pack_selected', packKey: pack.key, coins: pack.coins, recommended: coinTarget?.packKey === pack.key });
+    trackStore({ name: 'store_pack_selected', packKey: pack.key, coins: pack.coins, recommended: recommendedPackKey(coinTarget) === pack.key });
     recharge.mutate(pack.key, {
       onSuccess: (res) => {
         celebrate();
@@ -203,10 +207,6 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
         // Si veníamos de "te faltan coins" y ahora alcanza, la compra se retoma en un toque.
         const resume = coinTarget && res.balance >= coinTarget.item.price ? coinTarget.item : null;
         if (resume) setCoinTarget(null);
-        else if (coinTarget) {
-          const shortfall = coinTarget.item.price - res.balance;
-          setCoinTarget({ ...coinTarget, shortfall, packKey: packForShortfall(coinPacks, shortfall)?.key ?? null });
-        }
         setReceipt({
           title: `+${res.amount.toLocaleString('es-AR')} Findy Coins`,
           detail: `Modo demo: no se cobró dinero real. Saldo: ${res.balance.toLocaleString('es-AR')} coins.`,
@@ -322,7 +322,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
             <div
               role="tablist"
               aria-label="Secciones de la tienda"
-              className="flex items-center gap-1 p-1 w-full lg:w-[480px] lg:shrink-0 rounded-[var(--radius-pill)] border bg-white/90 border-[var(--coral-100)] dark:bg-[var(--midnight-850)]/90 dark:border-[var(--hairline)] backdrop-blur-sm shadow-elevation-sm"
+              className="flex items-center gap-1 p-1 w-full lg:w-[480px] lg:shrink-0 rounded-[var(--radius-pill)] border bg-white border-[var(--coral-100)] dark:bg-[var(--midnight-850)] dark:border-[var(--hairline)] shadow-elevation-sm"
             >
               {STORE_TABS.map((tab) => {
                 const selected = activeTab === tab.id;
@@ -375,7 +375,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
                     items={memberships}
                     currentTier={membershipTier}
                     currentIsLifetime={currentIsLifetime}
-                    balance={walletBalance}
+                    balance={knownBalance}
                     onSelect={selectItem}
                   />
                 ) : (
@@ -410,9 +410,20 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
                   onRetryPacks={() => packsQuery.refetch()}
                   history={historyQuery.data?.entries ?? []}
                   historyLoading={historyQuery.isLoading}
+                  historyError={historyQuery.isError}
+                  onRetryHistory={() => historyQuery.refetch()}
+                  balance={knownBalance}
                   shopItems={shopItems}
                   target={coinTarget}
                   onClearTarget={() => setCoinTarget(null)}
+                  onResumeTarget={() => {
+                    if (!coinTarget) return;
+                    const item = coinTarget.item;
+                    trackStore({ name: 'store_resume_after_recharge', itemKey: item.key });
+                    setCoinTarget(null);
+                    changeTab(isMembershipItem(item) ? 'planes' : 'poderes');
+                    selectItem(item);
+                  }}
                   rechargingKey={rechargingKey}
                   onRecharge={handleRecharge}
                   promoCode={promoCode}
@@ -430,7 +441,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
         item={selectedItem}
         currentTier={membershipTier}
         currentExpiresAt={user?.membership.expiresAt ?? null}
-        balance={walletBalance}
+        balance={knownBalance}
         includedInPlan={selectedIncluded}
         pending={purchase.isPending}
         error={purchaseError}
@@ -443,7 +454,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
           if (!selectedItem) return;
           const shortfall = Math.max(0, selectedItem.price - walletBalance);
           trackStore({ name: 'store_insufficient_coins', itemKey: selectedItem.key, shortfall });
-          setCoinTarget({ item: selectedItem, shortfall, packKey: packForShortfall(coinPacks, shortfall)?.key ?? null });
+          setCoinTarget({ item: selectedItem });
           setSelectedItem(null);
           changeTab('coins');
         }}
