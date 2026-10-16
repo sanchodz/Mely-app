@@ -22,7 +22,8 @@ interface PlansSectionProps {
   currentTier: MembershipTier;
   /** El plan actual no vence (Black "para siempre" de antes): no hay nada que renovar. */
   currentIsLifetime: boolean;
-  balance: number;
+  /** null mientras el saldo carga: no afirmar "te faltan" con un 0 que no es real. */
+  balance: number | null;
   onSelect: (item: ShopItem, source: 'featured' | 'card') => void;
 }
 
@@ -122,7 +123,7 @@ const PlanCard: React.FC<{
   featured: boolean;
   currentTier: MembershipTier;
   savings: Savings;
-  balance: number;
+  balance: number | null;
   onSelect: (item: ShopItem, source: 'featured' | 'card') => void;
 }> = ({ plan, item, state, featured, currentTier, savings, balance, onSelect }) => {
   const isCurrent = state === 'current' || state === 'lifetime';
@@ -196,7 +197,7 @@ const PlanCard: React.FC<{
       <div className="relative flex flex-col gap-2.5">
         <PriceBlock plan={plan} item={item} large={featured} />
         <div className="flex flex-wrap gap-1.5">
-          {state === 'available' && <Affordability price={item.price} balance={balance} />}
+          {state === 'available' && balance !== null && <Affordability price={item.price} balance={balance} />}
           {savings && plan.tier === 'FOUNDING' && <SavingsTag savings={savings} />}
         </div>
       </div>

@@ -52,6 +52,7 @@ export const CurrentPlanPanel: React.FC<CurrentPlanPanelProps> = ({
     return name && detail ? [{ name, detail }] : [];
   });
   const multiplier = perks?.dateRewardMultiplier ?? 1;
+  const hasIncluded = included.length > 0 || multiplier > 1;
 
   return (
     <section
@@ -67,7 +68,15 @@ export const CurrentPlanPanel: React.FC<CurrentPlanPanelProps> = ({
         )}
       />
       {/* Mobile: plan | saldo arriba, después incluido y bono. Desktop: dos columnas, saldo y bono a la derecha. */}
-      <div className="p-5 lg:p-6 grid gap-4 lg:gap-x-8 grid-cols-[minmax(0,1fr)_auto] [grid-template-areas:'plan_saldo'_'incl_incl'_'bonus_bonus'] lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:[grid-template-areas:'plan_saldo'_'incl_bonus']">
+      {/* Sin "incluido" no se reserva su fila: una fila vacía duplicaba el espacio en mobile. */}
+      <div
+        className={cn(
+          'p-5 lg:p-6 grid gap-4 lg:gap-x-8 grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]',
+          hasIncluded
+            ? "[grid-template-areas:'plan_saldo'_'incl_incl'_'bonus_bonus'] lg:[grid-template-areas:'plan_saldo'_'incl_bonus']"
+            : "[grid-template-areas:'plan_saldo'_'bonus_bonus'] lg:[grid-template-areas:'plan_saldo'_'._bonus']",
+        )}
+      >
         <div className="min-w-0 [grid-area:plan]">
           <span className="section-kicker block mb-2">Tu plan</span>
           <p className={cn('text-[28px] lg:text-[32px] leading-none italic font-semibold', tone.strong)} style={{ fontFamily: 'var(--font-display)' }}>
@@ -84,7 +93,7 @@ export const CurrentPlanPanel: React.FC<CurrentPlanPanelProps> = ({
           )}
         </div>
 
-        {(included.length > 0 || multiplier > 1) && (
+        {hasIncluded && (
           <div className="flex flex-col gap-2 [grid-area:incl]">
             <span className={cn('text-[11px] font-semibold uppercase tracking-[0.12em]', tone.muted)}>Incluido ahora</span>
             <ul className="flex flex-wrap gap-1.5">

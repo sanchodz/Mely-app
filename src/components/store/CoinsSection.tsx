@@ -10,16 +10,17 @@ import {
   packBonusPercent,
   packEquivalent,
   type PackEquivalent,
+  packForShortfall,
   REWARD_REASON_LABELS,
 } from './storeCatalog';
 import { Coins, Icon, Pill, SectionTitle, Spinner, tone } from './storeUi';
 
-/** Lo que el usuario intentaba comprar cuando no le alcanzó. */
+/**
+ * Lo que el usuario intentaba comprar cuando no le alcanzó. Solo el ítem: cuánto
+ * falta se calcula con el saldo de cada render (bono, código o recarga lo cambian).
+ */
 export interface CoinTarget {
   item: ShopItem;
-  shortfall: number;
-  /** Paquete más chico que cubre lo que falta (null si ninguno alcanza solo). */
-  packKey: string | null;
 }
 
 interface CoinsSectionProps {
@@ -29,9 +30,14 @@ interface CoinsSectionProps {
   onRetryPacks: () => void;
   history: LedgerEntry[];
   historyLoading: boolean;
+  historyError: boolean;
+  onRetryHistory: () => void;
+  /** null mientras carga. */
+  balance: number | null;
   shopItems: ShopItem[];
   target: CoinTarget | null;
   onClearTarget: () => void;
+  onResumeTarget: () => void;
   rechargingKey: string | null;
   onRecharge: (pack: CoinPack) => void;
   promoCode: string;
@@ -47,21 +53,39 @@ function equivalentLabel(eq: PackEquivalent | null): string | null {
 }
 
 /** Banner cuando venís de "Te faltan coins": qué querías, cuánto falta y qué paquete lo cubre. */
-const TargetBanner: React.FC<{ target: CoinTarget; onClear: () => void }> = ({ target, onClear }) => (
+const TargetBanner: React.FC<{
+  item: ShopItem;
+  shortfall: number;
+  packKey: string | null;
+  onClear: () => void;
+  onResume: () => void;
+}> = ({ item, shortfall, packKey, onClear, onResume }) => (
   <div
     role="status"
     className="flex items-start gap-3 rounded-[var(--radius-md)] border p-4 bg-rose-50 border-[var(--coral-300)]/60 dark:bg-[var(--coral-500)]/10 dark:border-[var(--coral-500)]/30"
   >
-    <Icon name="shopping_bag" filled className={cn('text-[22px] shrink-0 mt-px', tone.accent)} />
-    <div className="flex-1 min-w-0">
-      <p className={cn('text-[13.5px] font-bold', tone.strong)}>
-        Te faltan {target.shortfall.toLocaleString('es-AR')} coins para {target.item.name}
-      </p>
-      <p className={cn('text-[12.5px] mt-0.5', tone.muted)}>
-        {target.packKey
-          ? 'Marcamos el paquete más chico que lo cubre. Después de recargar, seguís con la compra.'
-          : 'Ningún paquete lo cubre solo: podés combinar recargas, el bono diario y tus citas.'}
-      </p>
+    <Icon name={shortfall > 0 ? 'shopping_bag' : 'check_circle'} filled className={cn('text-[22px] shrink-0 mt-px', tone.accent)} />
+    <div className="flex-1 min-w-0 flex flex-col items-start gap-2">
+      <div>
+        <p className={cn('text-[13.5px] font-bold', tone.strong)}>
+          {shortfall > 0
+            ? `Te faltan ${shortfall.toLocaleString('es-AR')} coins para ${item.name}`
+            : `Ya te alcanza para ${item.name}`}
+        </p>
+        <p className={cn('text-[12.5px] mt-0.5', tone.muted)}>
+          {shortfall <= 0
+            ? 'Podés seguir con la compra cuando quieras.'
+            : packKey
+              ? 'Marcamos el paquete más chico que lo cubre. Después de recargar, seguís con la compra.'
+              : 'Ningún paquete lo cubre solo: podés combinar recargas, el bono diario y tus citas.'}
+        </p>
+      </div>
+      {shortfall <= 0 && (
+        <Button size="sm" onClick={onResume} className="rounded-[var(--radius-pill)] px-4 gap-1">
+          Continuar con {item.name}
+          <Icon name="arrow_forward" className="text-[16px]" />
+        </Button>
+      )}
     </div>
     <button
       type="button"
@@ -81,9 +105,13 @@ export const CoinsSection: React.FC<CoinsSectionProps> = ({
   onRetryPacks,
   history,
   historyLoading,
+  historyError,
+  onRetryHistory,
+  balance,
   shopItems,
   target,
   onClearTarget,
+  onResumeTarget,
   rechargingKey,
   onRecharge,
   promoCode,
@@ -93,10 +121,14 @@ export const CoinsSection: React.FC<CoinsSectionProps> = ({
 }) => {
   const bonus = packBonusPercent(packs);
   const sortedPacks = [...packs].sort((a, b) => a.coins - b.coins);
+  const shortfall = target && balance !== null ? target.item.price - balance : null;
+  const recommendedKey = shortfall !== null && shortfall > 0 ? (packForShortfall(packs, shortfall)?.key ?? null) : null;
 
   return (
     <div className="flex flex-col gap-8">
-      {target && <TargetBanner target={target} onClear={onClearTarget} />}
+      {target && shortfall !== null && (
+        <TargetBanner item={target.item} shortfall={shortfall} packKey={recommendedKey} onClear={onClearTarget} onResume={onResumeTarget} />
+      )}
 
       <section className="flex flex-col gap-3" aria-labelledby="packs-title">
         <div id="packs-title">
@@ -131,7 +163,7 @@ export const CoinsSection: React.FC<CoinsSectionProps> = ({
         ) : (
           <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {sortedPacks.map((pack) => {
-              const recommended = target?.packKey === pack.key;
+              const recommended = recommendedKey === pack.key;
               const equivalent = equivalentLabel(packEquivalent(pack.coins, shopItems));
               const pending = rechargingKey === pack.key;
               return (
@@ -235,6 +267,13 @@ export const CoinsSection: React.FC<CoinsSectionProps> = ({
                 {[0, 1, 2].map((i) => (
                   <Skeleton key={i} className="h-11 rounded-[var(--radius-md)]" />
                 ))}
+              </div>
+            ) : historyError && history.length === 0 ? (
+              <div className={cn('rounded-[var(--radius-md)] p-4 flex items-center gap-3', tone.sunken)}>
+                <p className={cn('flex-1 text-[13px]', tone.muted)}>No pudimos cargar tus movimientos.</p>
+                <Button variant="secondary" size="sm" onClick={onRetryHistory} className="rounded-[var(--radius-pill)] px-4">
+                  Reintentar
+                </Button>
               </div>
             ) : history.length === 0 ? (
               <p className={cn('rounded-[var(--radius-md)] p-4 text-[13px] text-center', tone.sunken, tone.muted)}>

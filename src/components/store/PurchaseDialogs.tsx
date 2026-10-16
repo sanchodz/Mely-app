@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import type { MembershipTier, ShopItem } from '../../types';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
@@ -10,7 +10,8 @@ interface PurchaseDialogProps {
   item: ShopItem | null;
   currentTier: MembershipTier;
   currentExpiresAt: string | null;
-  balance: number;
+  /** null mientras el saldo carga: no se puede decir si alcanza. */
+  balance: number | null;
   /** El ítem sale gratis por el cupo del plan actual. */
   includedInPlan: boolean;
   pending: boolean;
@@ -39,7 +40,8 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
   const plan = item ? planForKey(item.key) : undefined;
   const isRenewal = plan?.tier === currentTier;
   const cost = includedInPlan || !item ? 0 : item.price;
-  const shortfall = Math.max(0, cost - balance);
+  const balanceReady = balance !== null;
+  const shortfall = balanceReady ? Math.max(0, cost - balance) : 0;
   const icon = plan?.icon ?? (item ? POWER_PRESENTATION[item.key]?.icon : undefined) ?? 'shopping_bag';
   const accent = plan?.accent ?? (item ? POWER_PRESENTATION[item.key]?.accent : undefined) ?? 'coral';
   const prev = plan ? previousPlan(plan) : undefined;
@@ -48,7 +50,8 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
     : null;
 
   return (
-    <Dialog open={Boolean(item)} onOpenChange={(open) => !open && onClose()}>
+    // Mientras la compra está en curso no se cierra (Esc / tocar afuera): si fallaba, el error se perdía.
+    <Dialog open={Boolean(item)} onOpenChange={(open) => !open && !pending && onClose()}>
       <DialogContent className="w-[calc(100%-2rem)] max-w-[420px] p-0 gap-0 overflow-hidden">
         {item && (
           <>
@@ -106,11 +109,9 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
               )}
               <div className="flex justify-between gap-3">
                 <dt className={tone.muted}>Tu saldo</dt>
-                <dd className={tone.strong}>
-                  <Coins amount={balance} />
-                </dd>
+                <dd className={tone.strong}>{balanceReady ? <Coins amount={balance} /> : <span className={tone.muted}>Cargando…</span>}</dd>
               </div>
-              {!includedInPlan && (
+              {!includedInPlan && balanceReady && (
                 <div className={cn('flex justify-between gap-3 pt-2 border-t', tone.divider)}>
                   <dt className={cn('font-semibold', tone.strong)}>{shortfall > 0 ? 'Te faltan' : 'Te quedan'}</dt>
                   <dd className={cn('font-bold', shortfall > 0 ? tone.accent : tone.strong)}>
@@ -135,7 +136,7 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
                   Conseguir coins
                 </Button>
               ) : (
-                <Button onClick={onConfirm} disabled={pending} aria-busy={pending} className="rounded-[var(--radius-pill)] gap-1.5">
+                <Button onClick={onConfirm} disabled={pending || (!includedInPlan && !balanceReady)} aria-busy={pending} className="rounded-[var(--radius-pill)] gap-1.5">
                   {pending && <Spinner className="text-[16px]" />}
                   {pending ? 'Procesando…' : includedInPlan ? 'Usar ahora' : 'Confirmar'}
                 </Button>
@@ -155,28 +156,34 @@ export interface Receipt {
   action?: { label: string; icon: string; onClick: () => void };
 }
 
-export const ReceiptDialog: React.FC<{ receipt: Receipt | null; onClose: () => void }> = ({ receipt, onClose }) => (
-  <Dialog open={Boolean(receipt)} onOpenChange={(open) => !open && onClose()}>
-    <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] text-center flex flex-col items-center gap-4">
-      <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[var(--coral-600)] to-[var(--coral-500)] flex items-center justify-center text-white shadow-[var(--shadow-coral)]">
-        <Icon name="verified" filled className="text-[34px]" />
-      </div>
-      <div>
-        <span className="section-kicker block">Listo</span>
-        <DialogTitle className={cn('text-[19px] font-bold mt-2', tone.strong)}>{receipt?.title}</DialogTitle>
-        <DialogDescription className={cn('text-[13px] mt-1', tone.muted)}>{receipt?.detail}</DialogDescription>
-      </div>
-      <div className="w-full flex flex-col gap-2">
-        {receipt?.action && (
-          <Button onClick={receipt.action.onClick} className="w-full rounded-[var(--radius-pill)] gap-1.5">
-            {receipt.action.label}
-            <Icon name={receipt.action.icon} className="text-[18px]" />
+export const ReceiptDialog: React.FC<{ receipt: Receipt | null; onClose: () => void }> = ({ receipt: current, onClose }) => {
+  // Al cerrar, `current` pasa a null antes de que termine la animación: se sigue mostrando el último.
+  const last = useRef<Receipt | null>(null);
+  if (current) last.current = current;
+  const receipt = current ?? last.current;
+  return (
+    <Dialog open={Boolean(current)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] text-center flex flex-col items-center gap-4">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[var(--coral-600)] to-[var(--coral-500)] flex items-center justify-center text-white shadow-[var(--shadow-coral)]">
+          <Icon name="verified" filled className="text-[34px]" />
+        </div>
+        <div>
+          <span className="section-kicker block">Listo</span>
+          <DialogTitle className={cn('text-[19px] font-bold mt-2', tone.strong)}>{receipt?.title}</DialogTitle>
+          <DialogDescription className={cn('text-[13px] mt-1', tone.muted)}>{receipt?.detail}</DialogDescription>
+        </div>
+        <div className="w-full flex flex-col gap-2">
+          {receipt?.action && (
+            <Button onClick={receipt.action.onClick} className="w-full rounded-[var(--radius-pill)] gap-1.5">
+              {receipt.action.label}
+              <Icon name={receipt.action.icon} className="text-[18px]" />
+            </Button>
+          )}
+          <Button variant={receipt?.action ? 'secondary' : 'primary'} onClick={onClose} className="w-full rounded-[var(--radius-pill)]">
+            {receipt?.action ? 'Seguir en la tienda' : 'Continuar'}
           </Button>
-        )}
-        <Button variant={receipt?.action ? 'secondary' : 'primary'} onClick={onClose} className="w-full rounded-[var(--radius-pill)]">
-          {receipt?.action ? 'Seguir en la tienda' : 'Continuar'}
-        </Button>
-      </div>
-    </DialogContent>
-  </Dialog>
-);
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
