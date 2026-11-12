@@ -75,7 +75,7 @@ const Chip: React.FC<{ active: boolean; onClick: () => void; children: React.Rea
       onClick={onClick}
       disabled={disabled}
       aria-disabled={disabled}
-      className={`h-[38px] px-4 rounded-[var(--radius-pill)] border-[1.5px] text-[13px] font-bold whitespace-nowrap transition-colors ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
+      className={`h-10 px-4 rounded-[var(--radius-pill)] border-[1.5px] text-[13.5px] font-bold whitespace-nowrap transition-all active:scale-[0.97] ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
       style={
         active
           ? { background: 'var(--coral-500)', borderColor: 'var(--coral-500)', color: 'var(--ink-on-coral)' }
@@ -98,7 +98,6 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
   partnerName,
   initialNote,
 }) => {
-  const { isLight } = useTheme();
   const { data: meta } = useDatesMeta();
   const proposeDate = useProposeDate(connectionId);
 
@@ -185,24 +184,15 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="w-[calc(100%-2rem)] max-w-[420px] p-0 gap-0 rounded-[var(--radius-lg)] overflow-hidden max-h-[90dvh] flex flex-col">
-        <DialogHeader
-          className={`p-5 border-b space-y-0 ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#131f36] border-[#ec4d86]/20'}`}
-        >
-          <span className={`font-label-caps text-[9px] uppercase tracking-widest block font-bold ${isLight ? 'text-[#ec4d86]' : 'text-[#ffa3c4]'}`}>
-            PROPUESTA DE ENCUENTRO PRESENCIAL
-          </span>
-          <h3
-            className={`text-[20px] italic font-semibold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Invitar a {partnerName}
-          </h3>
+        <DialogHeader className="hairline-b px-6 pt-6 pb-4 pr-14 space-y-1.5 text-left">
+          <span className="t-overline text-[#ec4d86] dark:text-[#ffa3c4]">Propuesta de encuentro</span>
+          <h3 className="t-display text-[24px] italic text-ink">Invitar a {partnerName}</h3>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-5 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-6 overflow-y-auto">
           {/* Día */}
           <div className="flex flex-col gap-2.5">
-            <Label className="normal-case tracking-wide text-[12px] font-bold">Día</Label>
+            <Label className="text-[13px] font-bold text-ink">Día</Label>
             <div className="flex gap-2 flex-wrap">
               {dayOptions.map((d) => (
                 <Chip key={d.key} active={dayKey === d.key} onClick={() => handleDaySelect(d.key)}>
@@ -214,7 +204,7 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
 
           {/* Horario (incluye "Coordinar por chat" como cuarta opción) */}
           <div className="flex flex-col gap-2.5">
-            <Label className="normal-case tracking-wide text-[12px] font-bold">Horario</Label>
+            <Label className="text-[13px] font-bold text-ink">Horario</Label>
             <div className="flex gap-2 flex-wrap">
               {TIME_OPTIONS.map((t) => (
                 <Chip
@@ -229,9 +219,7 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
             </div>
             {coordinateByChat && (
               <p
-                className={`text-[11.5px] rounded-[var(--radius-md)] px-3.5 py-2.5 border ${
-                  isLight ? 'bg-[#fcf9f2] border-[#ffe0ec] text-[#5b6478]' : 'bg-[#0a1120] border-[#ec4d86]/25 text-[#ffa3c4]/80'
-                }`}
+                className="surface-inset t-caption text-ink-muted px-3.5 py-2.5 leading-relaxed"
               >
                 No fijás un horario: le mandás la propuesta con el lugar y plan, y se ponen de acuerdo con la hora charlando en el chat.
               </p>
@@ -241,7 +229,7 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
           {/* Zona / lugar */}
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="propose-zone" className="normal-case tracking-wide text-[12px] font-bold">
+              <Label htmlFor="propose-zone" className="text-[13px] font-bold text-ink">
                 Lugar / Dirección
               </Label>
               <button
@@ -250,8 +238,7 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
                   sounds.playClick();
                   setShowTemplates((prev) => !prev);
                 }}
-                className="text-[11.5px] font-bold hover:underline cursor-pointer"
-                style={{ color: 'var(--coral-500)' }}
+                className="text-link text-[12.5px] min-h-[32px] inline-flex items-center"
               >
                 {showTemplates ? 'Ocultar plantillas' : 'Usar una plantilla rápida'}
               </button>
@@ -279,20 +266,14 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
                       setDayKey(qv.dayKey);
                       setTimeKey(qv.timeKey);
                     }}
-                    className={`p-2.5 rounded-[var(--radius-md)] text-left border text-[11px] transition-all cursor-pointer ${
-                      zone === qv.zone
-                        ? isLight
-                          ? 'bg-[#fcf9f2] border-[#ec4d86] text-[#ec4d86] font-bold'
-                          : 'bg-[#17233d] border-[#ffa3c4] text-[#f5f1e8] font-bold'
-                        : isLight
-                        ? 'bg-white border-[#ffe0ec] text-[#2e5570] hover:bg-[#fcf9f2]'
-                        : 'bg-[#0a1120] border-[#ec4d86]/20 text-[#ffa3c4]/70 hover:border-[#ec4d86]/50'
+                    className={`surface-inset min-h-[52px] px-3 py-2.5 text-left transition-all cursor-pointer active:scale-[0.98] ${
+                      zone === qv.zone ? '!border-[#ec4d86]' : ''
                     }`}
                   >
-                    <span className={`font-bold block truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+                    <span className="text-[13px] font-bold block truncate text-ink">
                       {planOptions.find((p) => p.value === qv.planType)?.label ?? qv.planType}
                     </span>
-                    <span className={`text-[9px] truncate block ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+                    <span className="t-caption truncate block text-ink-muted mt-0.5">
                       {qv.zone}
                     </span>
                   </button>
@@ -303,7 +284,7 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
 
           {/* Tipo de plan */}
           <div className="flex flex-col gap-2.5">
-            <Label className="normal-case tracking-wide text-[12px] font-bold">Tipo de plan</Label>
+            <Label className="text-[13px] font-bold text-ink">Tipo de plan</Label>
             <div className="flex gap-2 flex-wrap">
               {planOptions.map((p) => (
                 <Chip key={p.value} active={planType === p.value} onClick={() => { sounds.playClick(); setPlanType(p.value); }}>
@@ -314,7 +295,7 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="propose-note" className="mb-1.5 block normal-case tracking-wide text-[12px] font-bold">
+            <Label htmlFor="propose-note" className="mb-2 block text-[13px] font-bold text-ink">
               Nota o Detalle Especial (Opcional)
             </Label>
             <Input
@@ -327,15 +308,15 @@ export const ProposeDateModal: React.FC<ProposeDateModalProps> = ({
             />
           </div>
 
-          <div className="pt-1 flex flex-col gap-2.5">
-            <p className="text-center text-[12.5px]" style={{ color: isLight ? 'var(--text-on-light-muted)' : 'var(--text-secondary)' }}>
+          <div className="pt-1 flex flex-col gap-3">
+            <p className="surface-inset text-center t-body-sm text-ink-muted px-4 py-3">
               {summary}
             </p>
             <Button
               type="submit"
               disabled={proposeDate.isPending}
-              className="w-full h-14 rounded-[var(--radius-pill)] text-[16px] font-bold shadow-[var(--shadow-coral)]"
-              style={{ background: 'var(--coral-500)', color: 'var(--ink-on-coral)' }}
+              className="w-full h-13 text-[15.5px] font-bold shadow-[var(--shadow-coral)]"
+              style={{ background: 'var(--coral-500)', color: 'var(--ink-on-coral)', backgroundImage: 'none' }}
             >
               {proposeDate.isPending ? 'Enviando…' : 'Enviar propuesta'}
             </Button>
@@ -357,59 +338,54 @@ export const StampModal: React.FC<StampModalProps> = ({ stamp, onClose }) => {
 
   return (
     <Dialog open={Boolean(stamp)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] p-6 rounded-[var(--radius-lg)] flex flex-col items-center text-center">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] p-6 pt-8 gap-0 flex flex-col items-center text-center">
         {stamp && (
           <>
             <div
-              className={`w-24 h-24 rounded-full border-4 border-[#ec4d86] text-[#ec4d86] flex items-center justify-center stamp-ink mb-4 shadow-xl relative ${
-                isLight ? 'bg-[#fcf9f2]' : 'bg-[#0a1120]'
+              className={`w-[104px] h-[104px] rounded-full border-[3px] border-[#ec4d86] text-[#ec4d86] flex items-center justify-center stamp-ink mb-5 relative ${
+                isLight ? 'bg-white' : 'bg-[#0a1120]'
               }`}
+              style={{ boxShadow: '0 16px 32px -16px rgba(255,107,158,0.45)' }}
             >
-              <div className="absolute inset-1.5 border border-[#ec4d86]/40 rounded-full" />
-              <span className="material-symbols-outlined text-[42px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <div className="absolute inset-2 border border-dashed border-[#ec4d86]/50 rounded-full" />
+              <span className="material-symbols-outlined text-[44px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 {stamp.iconName}
               </span>
             </div>
 
-            <span className={`font-label-caps text-[10px] uppercase tracking-widest mb-1 font-bold ${isLight ? 'text-[#ec4d86]' : 'text-[#ffa3c4]'}`}>
-              {stamp.unlocked ? 'SELLO OFICIAL DE CONEXIÓN' : 'SELLO POR DESBLOQUEAR'}
+            <span className="t-overline mb-2 text-[#ec4d86] dark:text-[#ffa3c4]">
+              {stamp.unlocked ? 'Sello oficial de conexión' : 'Sello por desbloquear'}
             </span>
-            <h3 className={`font-headline-md text-[22px] font-bold mb-1 ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-              {stamp.title}
-            </h3>
-            <span className={`font-meta-data text-[12px] mb-4 font-semibold ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]'}`}>
+            <h3 className="t-title text-ink mb-1.5">{stamp.title}</h3>
+            <span className="t-body-sm text-ink-muted mb-5">
               {stamp.unlockedAt ? `Fecha: ${new Date(stamp.unlockedAt).toLocaleDateString('es-AR')}` : stamp.description}
             </span>
 
-            <div
-              className={`rounded-[var(--radius-md)] p-4 border w-full text-left flex flex-col gap-2.5 mb-5 ${
-                isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120] border-[#ec4d86]/20'
-              }`}
-            >
+            <div className="surface-inset p-4 w-full text-left flex flex-col gap-3 mb-5">
               {stamp.location && (
                 <div>
-                  <span className={`font-label-caps text-[9px] uppercase block font-bold ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/60'}`}>
+                  <span className="t-overline text-[10px] block mb-1 text-ink-faint">
                     LUGAR
                   </span>
-                  <p className={`font-body-sm text-[13px] ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{stamp.location}</p>
+                  <p className="t-body-sm font-semibold text-ink">{stamp.location}</p>
                 </div>
               )}
 
               {stamp.partnerName && (
                 <div>
-                  <span className={`font-label-caps text-[9px] uppercase block font-bold ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/60'}`}>
+                  <span className="t-overline text-[10px] block mb-1 text-ink-faint">
                     ENCUENTRO CON
                   </span>
-                  <p className={`font-body-sm text-[13px] ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{stamp.partnerName}</p>
+                  <p className="t-body-sm font-semibold text-ink">{stamp.partnerName}</p>
                 </div>
               )}
 
               {stamp.notes && (
                 <div>
-                  <span className={`font-label-caps text-[9px] uppercase block font-bold ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/60'}`}>
+                  <span className="t-overline text-[10px] block mb-1 text-ink-faint">
                     MEMORIA / DETALLES
                   </span>
-                  <p className={`font-body-sm text-[13px] italic ${isLight ? 'text-[#2e5570]' : 'text-[#ffa3c4]'}`}>"{stamp.notes}"</p>
+                  <p className="t-body-sm italic text-ink-muted" style={{ fontFamily: 'var(--font-display)' }}>"{stamp.notes}"</p>
                 </div>
               )}
             </div>
@@ -420,9 +396,9 @@ export const StampModal: React.FC<StampModalProps> = ({ stamp, onClose }) => {
                 sounds.playClick();
                 onClose();
               }}
-              className="w-full"
+              className="w-full h-12"
             >
-              Cerrar Recuerdo
+              Cerrar recuerdo
             </Button>
           </>
         )}
@@ -439,40 +415,26 @@ interface RechargeModalProps {
 }
 
 export const RechargeModal: React.FC<RechargeModalProps> = ({ pack, onClose, onConfirm }) => {
-  const { isLight } = useTheme();
-
   return (
     <Dialog open={Boolean(pack)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] p-6 rounded-[var(--radius-lg)] flex flex-col items-center text-center">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] p-6 pt-8 gap-0 flex flex-col items-center text-center">
         {pack && (
           <>
-            <div
-              className={`w-16 h-16 rounded-full border text-[#ec4d86] flex items-center justify-center mb-4 ${
-                isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#ec4d86]/20 border-[#ec4d86]/40'
-              }`}
-            >
+            <div className="icon-tile w-16 h-16 rounded-full mb-4">
               <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 monetization_on
               </span>
             </div>
 
-            <span className={`font-label-caps text-[10px] uppercase tracking-widest mb-1 font-bold ${isLight ? 'text-[#ec4d86]' : 'text-[#ffa3c4]'}`}>
-              BÓVEDA PERSONAL
-            </span>
-            <h3 className={`font-headline-md text-[20px] font-bold mb-1 ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{pack.name}</h3>
-            <p className={`font-body-sm text-[13px] mb-5 ${isLight ? 'text-[#2e5570]' : 'text-[#ffa3c4]/80'}`}>
-              Recibirás <strong className="text-[#ec4d86]">+{pack.pts} PTS</strong> en tu saldo de Findy para regalos y beneficios de conexión.
+            <span className="t-overline mb-2 text-[#ec4d86] dark:text-[#ffa3c4]">Bóveda personal</span>
+            <h3 className="t-title text-ink mb-1.5">{pack.name}</h3>
+            <p className="t-body-sm text-ink-muted mb-5">
+              Recibirás <strong className="text-[#ec4d86] dark:text-[#ffa3c4]">+{pack.pts} PTS</strong> en tu saldo de Findy para regalos y beneficios de conexión.
             </p>
 
-            <div
-              className={`p-4 rounded-[var(--radius-md)] border w-full flex justify-between items-center mb-6 ${
-                isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120] border-[#ec4d86]/25'
-              }`}
-            >
-              <span className={`font-label-caps text-[11px] uppercase font-bold ${isLight ? 'text-[#16223b]' : 'text-[#ffa3c4]'}`}>
-                Importe Total
-              </span>
-              <span className={`font-headline-md text-[20px] font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{pack.price} USD</span>
+            <div className="surface-inset p-4 w-full flex justify-between items-center mb-6">
+              <span className="t-overline text-[10px] text-ink-muted">Importe total</span>
+              <span className="t-title text-ink tabular-nums">{pack.price} USD</span>
             </div>
 
             <div className="flex gap-2.5 w-full">
@@ -482,7 +444,7 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({ pack, onClose, onC
                   sounds.playClick();
                   onClose();
                 }}
-                className="flex-1"
+                className="flex-1 h-12"
               >
                 Cancelar
               </Button>
@@ -492,9 +454,9 @@ export const RechargeModal: React.FC<RechargeModalProps> = ({ pack, onClose, onC
                   onConfirm();
                   onClose();
                 }}
-                className="flex-1"
+                className="flex-1 h-12"
               >
-                Confirmar Pago
+                Confirmar pago
               </Button>
             </div>
           </>
@@ -539,11 +501,15 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="left" className="w-[310px] p-5 flex flex-col justify-between overflow-y-auto no-scrollbar">
-        <div className="flex flex-col gap-5">
-          {/* Header */}
-          <div className={`pb-3.5 border-b pr-8 ${isLight ? 'border-slate-100' : 'border-white/10'}`}>
-            <h2 className="font-wordmark text-[19px] font-bold text-[#ec4d86]">FINDY</h2>
+      <SheetContent
+        side="left"
+        className="px-4 pb-4 flex flex-col justify-between overflow-y-auto no-scrollbar"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+      >
+        <div className="flex flex-col gap-4">
+          {/* Header: wordmark alineado con el botón de cerrar (40px) del Sheet. */}
+          <div className="h-10 -mt-1 flex items-center pl-2 pr-10">
+            <h2 className="font-wordmark text-[20px] font-bold text-[#ec4d86] tracking-[0.02em] leading-none">FINDY</h2>
           </div>
 
           {/* User mini badge — botón real (era un div con onClick: invisible
@@ -556,47 +522,49 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
               onClose();
             }}
             aria-label={`Ir a mi perfil, ${user.displayName}`}
-            className={`w-full p-3 rounded-[var(--radius-md)] border flex items-center gap-3 cursor-pointer transition-colors text-left ${
-              isLight ? 'border-slate-100 hover:bg-slate-50' : 'border-white/10 hover:bg-white/5'
-            }`}
+            className="surface-card w-full p-3 flex items-center gap-3 cursor-pointer transition-transform active:scale-[0.99] text-left"
           >
             <ProfilePhoto
               url={user.photos[0]?.url}
               name={user.displayName}
-              className="w-10 h-10 rounded-full shrink-0"
+              className="w-12 h-12 rounded-full shrink-0"
             />
-            <div className="flex-1 min-w-0">
-              <span className={`text-[13.5px] font-bold block truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-                {user.displayName}
+            <div className="flex-1 min-w-0 flex flex-col gap-1">
+              <span className="t-heading text-ink block truncate">{user.displayName}</span>
+              <span
+                className="inline-flex items-center gap-1 self-start px-2 py-[3px] rounded-[var(--radius-pill)] text-[10.5px] font-extrabold tracking-[0.04em] uppercase leading-none"
+                style={{ background: isLight ? 'var(--coral-100)' : 'rgba(255,107,158,0.16)', color: isLight ? 'var(--coral-700)' : 'var(--coral-300)' }}
+              >
+                {user.membership.tierLabel}
               </span>
-              <span className="text-[11px] text-[#ec4d86] font-bold block truncate">{user.membership.tierLabel}</span>
             </div>
-            <span className={`material-symbols-outlined text-[18px] ${isLight ? 'text-[#6fa8c9]' : 'text-[#ffa3c4]/50'}`} aria-hidden="true">
+            <span className="material-symbols-outlined text-[22px] text-ink-faint" aria-hidden="true">
               chevron_right
             </span>
           </button>
 
           {/* Navigation Links */}
-          <nav className="flex flex-col gap-1.5" aria-label="Secciones de Findy">
+          <nav className="flex flex-col gap-0.5 pt-1" aria-label="Secciones de Findy">
             {mainLinks.map((link) => (
               <button
                 key={link.tab}
+                type="button"
                 onClick={() => {
                   sounds.playClick();
                   onNavigate(link.tab);
                   onClose();
                 }}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors group cursor-pointer ${
-                  isLight ? 'hover:bg-slate-50 text-[#16223b]' : 'hover:bg-white/5 text-[#f5f1e8]'
-                }`}
+                className="nav-row group"
               >
-                <span className="material-symbols-outlined text-[19px] text-[#ec4d86] group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-[23px] text-[#ec4d86] group-hover:scale-105 transition-transform leading-none">
                   {link.icon}
                 </span>
-                <span className="text-[13.5px] font-medium flex-1">{link.label}</span>
-                {Boolean(badges?.[link.tab]) && (
-                  <span className="min-w-[18px] h-[18px] px-1 rounded-[var(--radius-pill)] bg-[#ec4d86] text-white text-[10px] font-bold flex items-center justify-center">
-                    {badges![link.tab]}
+                <span className="text-[15px] font-semibold flex-1 tracking-[-0.005em]">{link.label}</span>
+                {Boolean(badges?.[link.tab]) ? (
+                  <span className="count-badge">{badges![link.tab]}</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[18px] text-ink-faint opacity-60" aria-hidden="true">
+                    chevron_right
                   </span>
                 )}
               </button>
@@ -605,19 +573,28 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className={`pt-4 border-t flex flex-col gap-2.5 ${isLight ? 'border-slate-100' : 'border-white/10'}`}>
+        <div className="hairline-t pt-3 mt-4 flex flex-col gap-2">
           <button
             type="button"
             onClick={() => {
               sounds.playClick();
               toggleTheme();
             }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors group cursor-pointer ${
-              isLight ? 'hover:bg-slate-50 text-[#16223b]' : 'hover:bg-white/5 text-[#f5f1e8]'
-            }`}
+            className="nav-row"
           >
-            <span className="material-symbols-outlined text-[19px] text-[#ec4d86]">{isLight ? 'dark_mode' : 'light_mode'}</span>
-            <span className="text-[13.5px] font-medium">{isLight ? 'Modo oscuro' : 'Modo claro'}</span>
+            <span className="material-symbols-outlined text-[23px] text-[#ec4d86] leading-none">{isLight ? 'dark_mode' : 'light_mode'}</span>
+            <span className="text-[15px] font-semibold flex-1 tracking-[-0.005em]">{isLight ? 'Modo oscuro' : 'Modo claro'}</span>
+            {/* Mini switch decorativo: estado visible sin texto extra. */}
+            <span
+              aria-hidden="true"
+              className="relative w-9 h-5 rounded-full transition-colors"
+              style={{ background: isLight ? 'rgba(22,34,59,0.15)' : 'var(--coral-500)' }}
+            >
+              <span
+                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-[0_1px_2px_rgba(10,17,32,0.3)] transition-transform"
+                style={{ left: 2, transform: isLight ? 'translateX(0)' : 'translateX(16px)' }}
+              />
+            </span>
           </button>
 
           <Button
@@ -627,9 +604,9 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({
               onSignOut();
               onClose();
             }}
-            className="w-full gap-1.5 text-[13px] normal-case tracking-normal text-[#ec4d86]"
+            className="w-full h-12 text-[14px] text-[#ec4d86] dark:text-[#ffa3c4]"
           >
-            <span className="material-symbols-outlined text-[16px]">logout</span>
+            <span className="material-symbols-outlined text-[18px]">logout</span>
             <span>Cerrar sesión</span>
           </Button>
         </div>

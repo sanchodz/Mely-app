@@ -13,8 +13,8 @@ const Separator = React.forwardRef<
       'shrink-0',
       orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]',
       dashed
-        ? 'border-t border-dashed border-rose-200 dark:border-rose-900/40 bg-transparent'
-        : 'bg-rose-100 dark:bg-rose-950/40',
+        ? 'border-t border-dashed border-black/15 dark:border-white/15 bg-transparent'
+        : 'bg-black/[0.08] dark:bg-white/10',
       className
     )}
     {...props}

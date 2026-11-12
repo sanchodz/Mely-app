@@ -61,144 +61,157 @@ export const DiscoveryFiltersModal: React.FC<DiscoveryFiltersModalProps> = ({
     onClose();
   };
 
+  const activeCount =
+    (localFilters.onlyVerifiedMembers ? 1 : 0) +
+    (localFilters.withAudioBioOnly ? 1 : 0) +
+    localFilters.selectedInterests.length;
+
+  const titleColor = isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]';
+  const mutedColor = isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]';
+  const sectionTitle = `text-[14px] font-bold ${titleColor}`;
+  const valueBadge = `inline-flex items-center h-7 px-2.5 rounded-full text-[12px] font-bold font-mono ${
+    isLight ? 'bg-[#ffe0ec]/70 text-[#c9366d]' : 'bg-[#ec4d86]/15 text-[#ffa3c4]'
+  }`;
+  const toggleRow = 'flex items-center gap-3 px-4 min-h-[64px] py-3';
+  const groupClass = `rounded-[var(--radius-md)] border divide-y overflow-hidden ${
+    isLight ? 'bg-white border-[#ffe0ec] divide-[#ffe0ec]' : 'bg-[#0a1120]/60 border-white/8 divide-white/8'
+  }`;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100%-1.5rem)] max-w-[420px] max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="w-[calc(100%-1.5rem)] max-w-[420px] max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden rounded-[var(--radius-lg)]">
         <DialogHeader
-          className={`p-4 sm:p-5 border-b flex-row justify-between items-center shrink-0 space-y-0 ${
-            isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#131f36] border-[#ec4d86]/30'
+          className={`px-5 pt-5 pb-4 border-b flex-row justify-between items-center shrink-0 space-y-0 ${
+            isLight ? 'bg-white border-[#ffe0ec]' : 'bg-[#0f1a2e] border-white/8'
           }`}
         >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#ec4d86] flex items-center justify-center text-white shadow-elevation-md shadow-[#ec4d86]/20">
-              <span className="material-symbols-outlined text-[18px]">tune</span>
-            </div>
-            <div>
-              <span className="font-label-caps text-[9px] uppercase tracking-widest text-[#ec4d86] font-bold block">
-                RADAR EDITORIAL
-              </span>
-              <h3 className={`font-headline-md text-[18px] font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-                Filtros de Descubrimiento
-              </h3>
-            </div>
+          <div className="min-w-0 pr-10 text-left">
+            <span className="section-kicker block">Descubrir</span>
+            <h3 className={`mt-1 text-[20px] font-extrabold tracking-tight leading-tight ${titleColor}`}>Filtros</h3>
+            <p className={`mt-0.5 text-[12px] ${mutedColor}`}>
+              {activeCount === 0 ? 'Sin filtros activos' : `${activeCount} ${activeCount === 1 ? 'filtro activo' : 'filtros activos'}`}
+            </p>
           </div>
         </DialogHeader>
 
         {/* Scrollable Filters Content */}
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5 no-scrollbar">
+        <div className={`flex-1 overflow-y-auto p-5 flex flex-col gap-6 no-scrollbar ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#0f1a2e]'}`}>
           {/* Distance Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <Label>Distancia Máxima</Label>
-              <span className="font-mono text-[11px] font-bold text-[#ec4d86]">
-                {localFilters.maxDistanceKm} km
-              </span>
+          <section>
+            <div className="flex justify-between items-center mb-3">
+              <Label className={sectionTitle + ' normal-case tracking-normal'}>Distancia máxima</Label>
+              <span className={valueBadge}>{localFilters.maxDistanceKm} km</span>
             </div>
-            <Slider
-              min={1}
-              max={50}
-              step={1}
-              value={[localFilters.maxDistanceKm]}
-              onValueChange={([v]) => setLocalFilters((prev) => ({ ...prev, maxDistanceKm: v }))}
-            />
-            <div className={`flex justify-between text-[9px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'} mt-1.5 font-mono`}>
-              <span>1 km (Mismo barrio)</span>
-              <span>50 km (Metropolitano)</span>
+            <div className="px-1">
+              <Slider
+                min={1}
+                max={50}
+                step={1}
+                value={[localFilters.maxDistanceKm]}
+                onValueChange={([v]) => setLocalFilters((prev) => ({ ...prev, maxDistanceKm: v }))}
+              />
             </div>
-          </div>
+            <div className={`flex justify-between text-[11px] mt-2 ${mutedColor}`}>
+              <span>1 km · mismo barrio</span>
+              <span>50 km · toda la ciudad</span>
+            </div>
+          </section>
 
           {/* Age Range */}
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <Label>Rango de Edad</Label>
-              <span className="font-mono text-[11px] font-bold text-[#ec4d86]">
-                {localFilters.minAge} - {localFilters.maxAge} años
+          <section>
+            <div className="flex justify-between items-center mb-3">
+              <Label className={sectionTitle + ' normal-case tracking-normal'}>Edad</Label>
+              <span className={valueBadge}>
+                {localFilters.minAge}–{localFilters.maxAge} años
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <span className={`text-[9px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'} block mb-0.5 font-label-caps`}>Mínimo</span>
+              <label className="block">
+                <span className={`text-[11px] font-semibold block mb-1.5 ${mutedColor}`}>Mínimo</span>
                 <Input
                   type="number"
                   min={18}
                   max={localFilters.maxAge}
                   value={localFilters.minAge}
                   onChange={(e) => setLocalFilters((prev) => ({ ...prev, minAge: Number(e.target.value) }))}
-                  className="text-center font-mono text-[12px] font-bold"
+                  className="h-12 text-center font-mono text-[15px] font-bold rounded-[var(--radius-md)]"
                 />
-              </div>
-              <div>
-                <span className={`text-[9px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'} block mb-0.5 font-label-caps`}>Máximo</span>
+              </label>
+              <label className="block">
+                <span className={`text-[11px] font-semibold block mb-1.5 ${mutedColor}`}>Máximo</span>
                 <Input
                   type="number"
                   min={localFilters.minAge}
                   max={65}
                   value={localFilters.maxAge}
                   onChange={(e) => setLocalFilters((prev) => ({ ...prev, maxAge: Number(e.target.value) }))}
-                  className="text-center font-mono text-[12px] font-bold"
+                  className="h-12 text-center font-mono text-[15px] font-bold rounded-[var(--radius-md)]"
                 />
-              </div>
+              </label>
             </div>
-          </div>
+          </section>
 
-          {/* Verified Only Toggle */}
-          <div
-            className={`p-3.5 rounded-[var(--radius-md)] border flex items-center justify-between transition-colors ${
-              isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#131f36] border-[#ec4d86]/30'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[20px] text-[#ec4d86]">verified</span>
-              <div>
-                <span className={`font-label-caps text-[10px] uppercase font-bold block ${isLight ? 'text-[#16223b]' : 'text-white'}`}>
-                  Citas Verificadas en Pasaporte
+          {/* Toggles agrupados en una sola lista: menos bordes, misma función. */}
+          <section>
+            <p className={`${sectionTitle} mb-3`}>Solo mostrar</p>
+            <div className={groupClass}>
+              <label className={`${toggleRow} cursor-pointer`}>
+                <span
+                  className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center ${
+                    isLight ? 'bg-[#ffe0ec]/70 text-[#ec4d86]' : 'bg-[#ec4d86]/15 text-[#ffa3c4]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                 </span>
-                <span className={`text-[10px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
-                  Solo miembros con al menos 1 encuentro real comprobado.
+                <span className="flex-1 min-w-0">
+                  <span className={`block text-[13.5px] font-bold leading-tight ${titleColor}`}>Citas verificadas</span>
+                  <span className={`block text-[11.5px] mt-0.5 leading-snug ${mutedColor}`}>
+                    Miembros con al menos un encuentro real comprobado.
+                  </span>
                 </span>
-              </div>
-            </div>
-            <Switch
-              checked={localFilters.onlyVerifiedMembers}
-              onCheckedChange={(checked) => {
-                sounds.playClick();
-                setLocalFilters((prev) => ({ ...prev, onlyVerifiedMembers: checked }));
-              }}
-            />
-          </div>
+                <Switch
+                  checked={localFilters.onlyVerifiedMembers}
+                  onCheckedChange={(checked) => {
+                    sounds.playClick();
+                    setLocalFilters((prev) => ({ ...prev, onlyVerifiedMembers: checked }));
+                  }}
+                />
+              </label>
 
-          {/* Audio Bio Toggle */}
-          <div
-            className={`p-3.5 rounded-[var(--radius-md)] border flex items-center justify-between transition-colors ${
-              isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#131f36] border-[#ec4d86]/30'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[20px] text-amber-500">mic</span>
-              <div>
-                <span className={`font-label-caps text-[10px] uppercase font-bold block ${isLight ? 'text-[#16223b]' : 'text-white'}`}>
-                  Audio-Bio Activa 🎙️
+              <label className={`${toggleRow} cursor-pointer`}>
+                <span
+                  className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center ${
+                    isLight ? 'bg-amber-500/12 text-amber-600' : 'bg-amber-500/15 text-amber-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[20px]">mic</span>
                 </span>
-                <span className={`text-[10px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
-                  Perfiles que tienen una nota de voz grabada.
+                <span className="flex-1 min-w-0">
+                  <span className={`block text-[13.5px] font-bold leading-tight ${titleColor}`}>Con audio-bio</span>
+                  <span className={`block text-[11.5px] mt-0.5 leading-snug ${mutedColor}`}>
+                    Perfiles que se presentan con una nota de voz.
+                  </span>
                 </span>
-              </div>
+                <Switch
+                  checked={localFilters.withAudioBioOnly}
+                  onCheckedChange={(checked) => {
+                    sounds.playClick();
+                    setLocalFilters((prev) => ({ ...prev, withAudioBioOnly: checked }));
+                  }}
+                />
+              </label>
             </div>
-            <Switch
-              checked={localFilters.withAudioBioOnly}
-              onCheckedChange={(checked) => {
-                sounds.playClick();
-                setLocalFilters((prev) => ({ ...prev, withAudioBioOnly: checked }));
-              }}
-            />
-          </div>
+          </section>
 
           {/* Interests Pills */}
-          <div>
-            <Label className="block mb-2">
-              Intereses & Pasiones Específicas ({localFilters.selectedInterests.length})
-            </Label>
-            <div className="flex flex-wrap gap-1.5">
+          <section>
+            <div className="flex justify-between items-center mb-3">
+              <Label className={sectionTitle + ' normal-case tracking-normal'}>Intereses en común</Label>
+              {localFilters.selectedInterests.length > 0 && (
+                <span className={valueBadge}>{localFilters.selectedInterests.length}</span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
               {interests.map((interest) => {
                 const isSelected = localFilters.selectedInterests.includes(interest.slug);
                 return (
@@ -206,34 +219,40 @@ export const DiscoveryFiltersModal: React.FC<DiscoveryFiltersModalProps> = ({
                     key={interest.id}
                     type="button"
                     onClick={() => toggleInterest(interest.slug)}
-                    className={`px-2.5 py-1 rounded-[var(--radius-pill)] text-[11px] font-body-sm transition-all cursor-pointer ${
+                    aria-pressed={isSelected}
+                    className={`inline-flex items-center gap-1 h-9 px-3.5 rounded-full border text-[12.5px] font-semibold transition-all active:scale-95 ${
                       isSelected
-                        ? 'bg-[#ec4d86] text-white font-bold shadow-elevation-sm'
+                        ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] border-transparent text-white shadow-elevation-sm'
                         : isLight
-                        ? 'bg-white border border-[#ffe0ec] text-[#2e5570] hover:bg-[#fcf9f2]'
-                        : 'bg-[#131f36] border border-[#ec4d86]/20 text-[#ffa3c4]/70 hover:border-[#ec4d86]/50'
+                        ? 'bg-white border-[rgba(22,34,59,0.12)] text-[#16223b]'
+                        : 'bg-white/6 border-white/10 text-[#f5f1e8]/85'
                     }`}
                   >
+                    {isSelected && <span className="material-symbols-outlined text-[15px]">check</span>}
                     {interest.name}
                   </button>
                 );
               })}
             </div>
-          </div>
+          </section>
         </div>
 
         {/* Footer Actions */}
         <div
-          className={`p-4 border-t flex justify-between items-center gap-3 shrink-0 ${
-            isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#131f36] border-[#ec4d86]/30'
+          className={`px-5 py-4 border-t flex items-center gap-3 shrink-0 ${
+            isLight ? 'bg-white border-[#ffe0ec]' : 'bg-[#0f1a2e] border-white/8'
           }`}
         >
-          <Button variant="tertiary" onClick={handleReset} className="text-[10px] tracking-wider">
-            Limpiar Filtros
+          <Button
+            variant="tertiary"
+            onClick={handleReset}
+            className={`h-12 px-4 rounded-full text-[13px] font-bold ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}
+          >
+            Limpiar
           </Button>
 
-          <Button variant="primary" onClick={handleApply} className="px-5 py-2">
-            APLICAR AL RADAR
+          <Button variant="primary" onClick={handleApply} className="flex-1 h-12 rounded-full text-[14px] font-bold">
+            Aplicar filtros
           </Button>
         </div>
       </DialogContent>

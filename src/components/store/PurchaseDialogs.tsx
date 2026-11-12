@@ -55,15 +55,15 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
       <DialogContent className="w-[calc(100%-2rem)] max-w-[420px] p-0 gap-0 overflow-hidden">
         {item && (
           <>
-            <div className="p-5 flex items-start gap-3">
-              <div className={cn('w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center shrink-0', accentTile(accent))}>
-                <Icon name={icon} filled className="text-[26px]" />
+            <div className="p-5 flex items-start gap-3.5">
+              <div className={cn('w-13 h-13 rounded-[var(--radius-md)] flex items-center justify-center shrink-0', accentTile(accent))}>
+                <Icon name={icon} filled className="text-[28px]" />
               </div>
               <div className="min-w-0 pr-6">
-                <DialogTitle className={cn('text-[18px] font-bold leading-tight', tone.strong)}>
+                <DialogTitle className={cn('text-[20px] italic font-semibold leading-tight', tone.strong)} style={{ fontFamily: 'var(--font-display)' }}>
                   {isRenewal ? `Renovar ${item.name}` : item.name}
                 </DialogTitle>
-                <DialogDescription className={cn('text-[13px] mt-1 leading-snug', tone.muted)}>
+                <DialogDescription className={cn('text-[13.5px] mt-1 leading-snug', tone.muted)}>
                   {plan
                     ? isRenewal
                       ? `Se suman ${plan.durationDays} días a tu plan actual.`
@@ -75,17 +75,17 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
 
             {plan && (
               <div className="px-5 pb-4">
-                <p className={cn('text-[12px] font-semibold uppercase tracking-[0.12em] mb-2', tone.muted)}>Qué obtenés</p>
-                <ul className="flex flex-col gap-1.5">
+                <p className={cn('mb-2', tone.label)}>Qué obtenés</p>
+                <ul className="flex flex-col gap-2">
                   {prev && (
-                    <li className={cn('flex items-start gap-2 text-[13px]', tone.strong)}>
-                      <Icon name="check" className="text-[16px] mt-px text-emerald-500 shrink-0" />
+                    <li className={cn('flex items-start gap-2 text-[13.5px]', tone.strong)}>
+                      <Icon name="check_circle" filled className="text-[18px] text-emerald-500 shrink-0" />
                       Todo lo de {prev.shortName}
                     </li>
                   )}
                   {plan.benefits.map((b) => (
-                    <li key={b.title} className={cn('flex items-start gap-2 text-[13px]', tone.strong)}>
-                      <Icon name="check" className="text-[16px] mt-px text-emerald-500 shrink-0" />
+                    <li key={b.title} className={cn('flex items-start gap-2 text-[13.5px]', tone.strong)}>
+                      <Icon name="check_circle" filled className="text-[18px] text-emerald-500 shrink-0" />
                       {b.title}
                     </li>
                   ))}
@@ -94,7 +94,7 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
             )}
 
             {/* El diálogo ya usa el canvas de fondo: el resumen va en blanco para despegarse. */}
-            <dl className="mx-5 rounded-[var(--radius-md)] p-4 flex flex-col gap-2 text-[13px] bg-white dark:bg-[var(--midnight-950)]">
+            <dl className={cn('mx-5 rounded-[var(--radius-md)] border p-4 flex flex-col gap-2.5 text-[14px] bg-white dark:bg-[var(--midnight-950)]', tone.divider)}>
               <div className="flex justify-between gap-3">
                 <dt className={tone.muted}>Precio</dt>
                 <dd className={cn('font-bold', includedInPlan ? 'text-emerald-600 dark:text-emerald-400' : tone.strong)}>
@@ -127,16 +127,16 @@ export const PurchaseDialog: React.FC<PurchaseDialogProps> = ({
               </p>
             )}
 
-            <div className="p-5 grid grid-cols-2 gap-2">
-              <Button variant="secondary" onClick={onClose} disabled={pending} className="rounded-[var(--radius-pill)]">
+            <div className="p-5 grid grid-cols-2 gap-2.5">
+              <Button variant="secondary" onClick={onClose} disabled={pending} className="h-12 rounded-[var(--radius-pill)] text-[15px]">
                 Cancelar
               </Button>
               {shortfall > 0 ? (
-                <Button onClick={onGetCoins} className="rounded-[var(--radius-pill)] gap-1">
+                <Button onClick={onGetCoins} className="h-12 rounded-[var(--radius-pill)] gap-1 text-[15px]">
                   Conseguir coins
                 </Button>
               ) : (
-                <Button onClick={onConfirm} disabled={pending || (!includedInPlan && !balanceReady)} aria-busy={pending} className="rounded-[var(--radius-pill)] gap-1.5">
+                <Button onClick={onConfirm} disabled={pending || (!includedInPlan && !balanceReady)} aria-busy={pending} className="h-12 rounded-[var(--radius-pill)] gap-1.5 text-[15px]">
                   {pending && <Spinner className="text-[16px]" />}
                   {pending ? 'Procesando…' : includedInPlan ? 'Usar ahora' : 'Confirmar'}
                 </Button>
@@ -163,23 +163,25 @@ export const ReceiptDialog: React.FC<{ receipt: Receipt | null; onClose: () => v
   const receipt = current ?? last.current;
   return (
     <Dialog open={Boolean(current)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] text-center flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[var(--coral-600)] to-[var(--coral-500)] flex items-center justify-center text-white shadow-[var(--shadow-coral)]">
-          <Icon name="verified" filled className="text-[34px]" />
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] p-6 text-center flex flex-col items-center gap-5">
+        <div className="w-18 h-18 rounded-full bg-gradient-to-tr from-[var(--coral-600)] to-[var(--coral-500)] flex items-center justify-center text-white shadow-[var(--shadow-coral)]">
+          <Icon name="verified" filled className="text-[38px]" />
         </div>
         <div>
           <span className="section-kicker block">Listo</span>
-          <DialogTitle className={cn('text-[19px] font-bold mt-2', tone.strong)}>{receipt?.title}</DialogTitle>
-          <DialogDescription className={cn('text-[13px] mt-1', tone.muted)}>{receipt?.detail}</DialogDescription>
+          <DialogTitle className={cn('text-[22px] italic font-semibold mt-2 leading-tight', tone.strong)} style={{ fontFamily: 'var(--font-display)' }}>
+            {receipt?.title}
+          </DialogTitle>
+          <DialogDescription className={cn('text-[13.5px] mt-1.5 leading-snug', tone.muted)}>{receipt?.detail}</DialogDescription>
         </div>
-        <div className="w-full flex flex-col gap-2">
+        <div className="w-full flex flex-col gap-2.5">
           {receipt?.action && (
-            <Button onClick={receipt.action.onClick} className="w-full rounded-[var(--radius-pill)] gap-1.5">
+            <Button onClick={receipt.action.onClick} className="w-full h-12 rounded-[var(--radius-pill)] gap-1.5 text-[15px]">
               {receipt.action.label}
               <Icon name={receipt.action.icon} className="text-[18px]" />
             </Button>
           )}
-          <Button variant={receipt?.action ? 'secondary' : 'primary'} onClick={onClose} className="w-full rounded-[var(--radius-pill)]">
+          <Button variant={receipt?.action ? 'secondary' : 'primary'} onClick={onClose} className="w-full h-12 rounded-[var(--radius-pill)] text-[15px]">
             {receipt?.action ? 'Seguir en la tienda' : 'Continuar'}
           </Button>
         </div>

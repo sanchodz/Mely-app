@@ -13,17 +13,19 @@ import { cn } from '../../lib/utils';
  * El radio lo pone el tamaño/contexto (hero = pill vía className); el color
  * lo pone la intención. Deuda honesta: texto blanco sobre coral no llega a
  * 4.5:1 — candidato futuro `ink-on-coral` cuando se revise la marca. */
+// Radio unificado: píldora en todos los tamaños (igual que chips, nav pill y
+// CTAs hero) — antes convivían rounded-xl / 2xl / full según el tamaño.
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-2xl text-sm font-semibold transition-all focus-glow disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] select-none cursor-pointer',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-bold tracking-[-0.005em] transition-all focus-glow disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] select-none cursor-pointer',
   {
     variants: {
       variant: {
         primary:
           'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white shadow-[var(--shadow-coral)] hover:brightness-[1.05] active:brightness-95',
         secondary:
-          'border border-black/10 bg-white text-slate-800 hover:bg-[#fcf9f2] hover:text-[#c9366d] dark:border-white/10 dark:bg-[#0f1a2e] dark:text-rose-100 dark:hover:bg-rose-950/40',
+          'border border-black/10 bg-white text-[#16223b] hover:bg-[#fcf9f2] hover:border-black/15 dark:border-white/12 dark:bg-[#131f36] dark:text-[#f5f1e8] dark:hover:bg-[#17233d] dark:hover:border-white/20',
         tertiary:
-          'hover:bg-rose-100/70 hover:text-rose-900 dark:hover:bg-rose-950/50 dark:hover:text-rose-200',
+          'text-[#16223b] hover:bg-black/5 dark:text-[#f5f1e8] dark:hover:bg-white/8',
         destructive:
           'bg-red-500 text-white shadow-elevation-sm hover:bg-red-600 dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800',
         special:
@@ -31,11 +33,11 @@ const buttonVariants = cva(
         link: 'text-rose-600 underline-offset-4 hover:underline dark:text-rose-400',
       },
       size: {
-        default: 'h-11 px-5 py-2.5 text-sm',
-        sm: 'h-9 rounded-xl px-3 text-xs',
-        lg: 'h-13 rounded-2xl px-8 text-base font-semibold',
-        icon: 'h-10 w-10 rounded-full',
-        'icon-sm': 'h-8 w-8 rounded-full text-xs',
+        default: 'h-11 px-5 text-[14px]',
+        sm: 'h-9 px-4 text-[13px]',
+        lg: 'h-13 px-7 text-[15.5px]',
+        icon: 'h-11 w-11',
+        'icon-sm': 'h-9 w-9 text-xs',
       },
     },
     defaultVariants: {

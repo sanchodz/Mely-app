@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '../../lib/utils';
 import { formatShortDate, perkDetail, planForTier, TIER_SHORT_NAME } from './storeCatalog';
-import { Coins, Icon, Spinner, tone } from './storeUi';
+import { accentTile, Coins, Icon, Spinner, tone } from './storeUi';
 
 interface CurrentPlanPanelProps {
   user: MeProfile | null;
@@ -55,61 +55,73 @@ export const CurrentPlanPanel: React.FC<CurrentPlanPanelProps> = ({
   const hasIncluded = included.length > 0 || multiplier > 1;
 
   return (
-    <section
-      aria-label="Tu plan actual"
-      className={cn('relative overflow-hidden rounded-[var(--radius-lg)] border shadow-elevation-sm', tone.surface)}
-    >
-      {/* Filo superior con el acento del plan — firma discreta, no un banner. */}
+    <section aria-label="Tu plan actual" className={cn('relative overflow-hidden', tone.card)}>
+      {/* Halo con el acento del plan — firma discreta, no un banner. */}
       <div
         aria-hidden="true"
         className={cn(
-          'h-1 w-full',
-          isGold ? 'bg-gradient-to-r from-amber-300 to-amber-500' : 'bg-gradient-to-r from-[var(--coral-600)] to-[var(--coral-500)]',
+          'pointer-events-none absolute -top-24 -right-16 w-64 h-64 rounded-full blur-3xl opacity-50',
+          isGold ? 'bg-amber-300/40' : 'bg-[var(--coral-500)]/30',
         )}
       />
-      {/* Mobile: plan | saldo arriba, después incluido y bono. Desktop: dos columnas, saldo y bono a la derecha. */}
-      {/* Sin "incluido" no se reserva su fila: una fila vacía duplicaba el espacio en mobile. */}
-      <div
-        className={cn(
-          'p-5 lg:p-6 grid gap-4 lg:gap-x-8 grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]',
-          hasIncluded
-            ? "[grid-template-areas:'plan_saldo'_'incl_incl'_'bonus_bonus'] lg:[grid-template-areas:'plan_saldo'_'incl_bonus']"
-            : "[grid-template-areas:'plan_saldo'_'bonus_bonus'] lg:[grid-template-areas:'plan_saldo'_'._bonus']",
-        )}
-      >
-        <div className="min-w-0 [grid-area:plan]">
-          <span className="section-kicker block mb-2">Tu plan</span>
-          <p className={cn('text-[28px] lg:text-[32px] leading-none italic font-semibold', tone.strong)} style={{ fontFamily: 'var(--font-display)' }}>
-            {TIER_SHORT_NAME[tier]}
-          </p>
-          <p className={cn('text-[13px] mt-2 leading-snug', tone.muted)}>{statusLine}</p>
-        </div>
-        <div className="text-right lg:text-left [grid-area:saldo]">
-          <span className={cn('block text-[11px] font-semibold uppercase tracking-[0.12em]', tone.muted)}>Saldo</span>
-          {balanceLoading ? (
-            <Skeleton className="h-7 w-24 mt-1.5 ml-auto lg:ml-0 rounded-[var(--radius-sm)]" aria-label="Cargando saldo" />
-          ) : (
-            <Coins amount={balance} className={cn('text-[24px] lg:text-[28px] font-bold mt-1', tone.strong)} />
-          )}
+
+      <div className="relative p-5 lg:p-6 flex flex-col gap-5">
+        {/* Plan + saldo */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <span
+              className={cn(
+                'w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center shrink-0',
+                accentTile(plan?.accent ?? 'coral'),
+              )}
+            >
+              <Icon name={plan?.icon ?? 'person'} filled className="text-[26px]" />
+            </span>
+            <div className="min-w-0">
+              <span className="section-kicker block mb-1">Tu plan</span>
+              <p
+                className={cn('text-[28px] lg:text-[32px] leading-none italic font-semibold truncate', tone.strong)}
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                {TIER_SHORT_NAME[tier]}
+              </p>
+            </div>
+          </div>
+          <div
+            className={cn(
+              'shrink-0 flex flex-col items-end rounded-[var(--radius-md)] px-3.5 py-2.5 border',
+              tone.sunken,
+              tone.divider,
+            )}
+          >
+            <span className={tone.label}>Saldo</span>
+            {balanceLoading ? (
+              <Skeleton className="h-6 w-16 mt-1 rounded-[var(--radius-sm)]" aria-label="Cargando saldo" />
+            ) : (
+              <Coins amount={balance} className={cn('text-[22px] font-bold leading-none mt-1', tone.strong)} />
+            )}
+          </div>
         </div>
 
+        <p className={cn('text-[14px] leading-snug -mt-1', tone.muted)}>{statusLine}</p>
+
         {hasIncluded && (
-          <div className="flex flex-col gap-2 [grid-area:incl]">
-            <span className={cn('text-[11px] font-semibold uppercase tracking-[0.12em]', tone.muted)}>Incluido ahora</span>
-            <ul className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-2">
+            <span className={tone.label}>Incluido ahora</span>
+            <ul className="flex flex-wrap gap-2">
               {included.map((p) => (
                 <li
                   key={p.name}
-                  className="inline-flex items-center gap-1 rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
+                  className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] pl-2 pr-3 h-8 text-[12.5px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300"
                 >
-                  <Icon name="check" className="text-[14px]" />
+                  <Icon name="check_circle" filled className="text-[16px]" />
                   {p.name}
                   <span className="font-normal opacity-80">· {p.detail}</span>
                 </li>
               ))}
               {multiplier > 1 && (
-                <li className="inline-flex items-center gap-1 rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
-                  <Icon name="verified" className="text-[14px]" />
+                <li className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] pl-2 pr-3 h-8 text-[12.5px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
+                  <Icon name="verified" filled className="text-[16px]" />
                   Coins x{multiplier} por cita verificada
                 </li>
               )}
@@ -117,23 +129,31 @@ export const CurrentPlanPanel: React.FC<CurrentPlanPanelProps> = ({
           </div>
         )}
 
-        <div className={cn('flex items-center gap-3 rounded-[var(--radius-md)] p-3 [grid-area:bonus] self-end', tone.sunken)}>
-          <Icon
-            name={dailyBonusAvailable ? 'redeem' : 'check_circle'}
-            filled
-            className={cn('text-[22px] shrink-0', dailyBonusAvailable ? tone.gold : tone.muted)}
-          />
+        {/* Bono diario */}
+        <div className={cn('flex items-center gap-3 rounded-[var(--radius-md)] border p-3', tone.sunken, tone.divider)}>
+          <span
+            className={cn(
+              'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
+              dailyBonusAvailable ? 'bg-amber-100 dark:bg-amber-400/15' : 'bg-[var(--color-line)] dark:bg-[var(--midnight-800)]',
+            )}
+          >
+            <Icon
+              name={dailyBonusAvailable ? 'redeem' : 'check_circle'}
+              filled
+              className={cn('text-[22px]', dailyBonusAvailable ? tone.gold : tone.muted)}
+            />
+          </span>
           <div className="flex-1 min-w-0">
-            <p className={cn('text-[13px] font-bold', tone.strong)}>
+            <p className={cn('text-[14px] font-bold leading-tight', tone.strong)}>
               {dailyBonusAvailable ? 'Tu bono diario está listo' : 'Bono de hoy reclamado'}
             </p>
-            <p className={cn('text-[12px]', tone.muted)}>
+            <p className={cn('text-[12.5px] mt-0.5 leading-snug', tone.muted)}>
               {dailyBonusAvailable ? 'Coins gratis por entrar, todos los días.' : 'Mañana hay otro.'}
             </p>
           </div>
           {dailyBonusAvailable && (
-            <Button size="sm" onClick={onClaimBonus} disabled={claimingBonus} className="shrink-0 rounded-[var(--radius-pill)] px-4 gap-1.5">
-              {claimingBonus && <Spinner className="text-[15px]" />}
+            <Button onClick={onClaimBonus} disabled={claimingBonus} className="shrink-0 h-11 rounded-[var(--radius-pill)] px-4 gap-1.5 text-[14px]">
+              {claimingBonus && <Spinner className="text-[16px]" />}
               Reclamar
             </Button>
           )}

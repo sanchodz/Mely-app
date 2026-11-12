@@ -45,7 +45,7 @@ const PlanAlternative: React.FC<{ itemKey: string; currentTier: MembershipTier; 
     <button
       type="button"
       onClick={onSeePlans}
-      className={cn('self-start inline-flex items-center gap-1 text-[12px] font-semibold underline-offset-4 hover:underline', tone.accent)}
+      className={cn('self-start inline-flex items-center gap-1 min-h-8 text-[12.5px] font-semibold underline-offset-4 hover:underline', tone.accent)}
     >
       Incluido desde {TIER_SHORT_NAME[from.tier]}
       {detail}
@@ -68,11 +68,11 @@ export const PowersSection: React.FC<PowersSectionProps> = ({
   const contextual = items.filter((i) => i.key in CONTEXTUAL_HINT);
 
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-6">
       <SectionTitle kicker="Sin plan, cuando lo necesites" title="Poderes sueltos" />
 
       {direct.length > 0 && (
-        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
           {direct.map((item) => {
             const presentation = POWER_PRESENTATION[item.key] ?? FALLBACK;
             const perk = perkFor(item.key);
@@ -91,42 +91,43 @@ export const PowersSection: React.FC<PowersSectionProps> = ({
               <article
                 key={item.key}
                 aria-labelledby={`power-${item.key}`}
-                className={cn('rounded-[var(--radius-lg)] border p-4 sm:p-5 flex flex-col gap-3 shadow-elevation-sm', tone.surface)}
+                className={cn('p-4 sm:p-5 flex flex-col gap-4', tone.card)}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className={cn('w-11 h-11 rounded-[var(--radius-md)] flex items-center justify-center', accentTile(presentation.accent))}>
-                    <Icon name={presentation.icon} filled className="text-[22px]" />
+                <div className="flex items-start gap-3.5">
+                  <div className={cn('w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center shrink-0', accentTile(presentation.accent))}>
+                    <Icon name={presentation.icon} filled className="text-[24px]" />
                   </div>
-                  {disabled ? (
-                    <Pill tone="ok" icon="check" className="px-2 py-0.5 text-[11px]">
-                      {coveredByPlan ? 'En tu plan' : `Activo · ${formatRemaining(activeFor)}`}
-                    </Pill>
-                  ) : included ? (
-                    <Pill tone="ok" className="px-2 py-0.5 text-[11px]">
-                      Incluido · {included}
-                    </Pill>
-                  ) : null}
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 id={`power-${item.key}`} className={cn('text-[16px] font-bold leading-snug', tone.strong)}>
+                        {item.name}
+                      </h4>
+                      {disabled ? (
+                        <Pill tone="ok" icon="check" className="h-6 px-2 text-[11px] shrink-0">
+                          {coveredByPlan ? 'En tu plan' : `Activo · ${formatRemaining(activeFor)}`}
+                        </Pill>
+                      ) : included ? (
+                        <Pill tone="ok" className="h-6 px-2 text-[11px] shrink-0">
+                          Incluido · {included}
+                        </Pill>
+                      ) : null}
+                    </div>
+                    {presentation.useCase && (
+                      <p className={cn('text-[13.5px] font-semibold leading-snug', tone.strong)}>{presentation.useCase}</p>
+                    )}
+                    <p className={cn('text-[13px] leading-snug', tone.muted)}>{item.description}</p>
+                    {resetLabel && <p className="text-[12.5px] mt-0.5 text-emerald-700 dark:text-emerald-300">{resetLabel}</p>}
+                    {!disabled && !included && <PlanAlternative itemKey={item.key} currentTier={currentTier} onSeePlans={onSeePlans} />}
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col gap-1">
-                  <h4 id={`power-${item.key}`} className={cn('text-[15px] font-bold leading-snug', tone.strong)}>
-                    {item.name}
-                  </h4>
-                  {presentation.useCase && (
-                    <p className={cn('text-[13px] font-semibold leading-snug', tone.strong)}>{presentation.useCase}</p>
-                  )}
-                  <p className={cn('text-[12.5px] leading-snug', tone.muted)}>{item.description}</p>
-                  {resetLabel && <p className="text-[12px] mt-0.5 text-emerald-700 dark:text-emerald-300">{resetLabel}</p>}
-                </div>
-                {!disabled && !included && <PlanAlternative itemKey={item.key} currentTier={currentTier} onSeePlans={onSeePlans} />}
                 <Button
                   variant={disabled || included ? 'secondary' : 'primary'}
-                  size="sm"
                   disabled={disabled}
                   onClick={() => onSelect(item)}
                   aria-label={
                     disabled ? undefined : included ? `Usar ${item.name}, incluido en tu plan` : `Comprar ${item.name} por ${item.price} coins`
                   }
-                  className="w-full h-10 rounded-[var(--radius-pill)] text-[13px]"
+                  className="w-full h-11 rounded-[var(--radius-pill)] text-[14px]"
                 >
                   {coveredByPlan ? (
                     'Incluido'
@@ -145,30 +146,30 @@ export const PowersSection: React.FC<PowersSectionProps> = ({
       )}
 
       {contextual.length > 0 && (
-        <section className="flex flex-col gap-2" aria-label="Poderes que se usan en contexto">
-          <p className={cn('px-1 text-[12px] font-semibold uppercase tracking-[0.12em]', tone.muted)}>Se usan en el momento justo</p>
-          <div className="grid gap-2 lg:grid-cols-2 lg:gap-3">
+        <section className="flex flex-col gap-3" aria-label="Poderes que se usan en contexto">
+          <p className={cn('px-0.5', tone.label)}>Se usan en el momento justo</p>
+          <div className="grid gap-3 lg:grid-cols-2">
             {contextual.map((item) => {
               const presentation = POWER_PRESENTATION[item.key] ?? { ...FALLBACK, icon: 'info' };
               const included = perkLabel(perkFor(item.key));
               return (
                 <div
                   key={item.key}
-                  className={cn('rounded-[var(--radius-md)] border border-dashed p-3.5 flex items-start gap-3', tone.sunken, tone.divider)}
+                  className={cn('rounded-[var(--radius-lg)] border border-dashed p-4 flex items-start gap-3.5', tone.sunken, tone.divider)}
                 >
-                  <div className={cn('w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0', accentTile(presentation.accent))}>
-                    <Icon name={presentation.icon} filled className="text-[19px]" />
+                  <div className={cn('w-11 h-11 rounded-[var(--radius-md)] flex items-center justify-center shrink-0', accentTile(presentation.accent))}>
+                    <Icon name={presentation.icon} filled className="text-[22px]" />
                   </div>
-                  <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-                    <p className={cn('text-[13.5px] font-bold', tone.strong)}>
+                  <div className="min-w-0 flex-1 flex flex-col gap-1">
+                    <p className={cn('text-[15px] font-bold leading-snug', tone.strong)}>
                       {item.name}
                       <span className={cn('font-semibold', tone.muted)}>
                         {' · '}
                         {included ?? `${item.price.toLocaleString('es-AR')} coins`}
                       </span>
                     </p>
-                    {presentation.useCase && <p className={cn('text-[12.5px]', tone.strong)}>{presentation.useCase}</p>}
-                    <p className={cn('text-[12.5px]', tone.muted)}>{CONTEXTUAL_HINT[item.key]}</p>
+                    {presentation.useCase && <p className={cn('text-[13px] font-semibold leading-snug', tone.strong)}>{presentation.useCase}</p>}
+                    <p className={cn('text-[13px] leading-snug', tone.muted)}>{CONTEXTUAL_HINT[item.key]}</p>
                     {!included && <PlanAlternative itemKey={item.key} currentTier={currentTier} onSeePlans={onSeePlans} />}
                   </div>
                 </div>

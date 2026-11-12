@@ -13,7 +13,7 @@ import { ErrorState } from './StateViews';
 import { cn } from '../lib/utils';
 import { isMembershipItem, minutesLeft, packForShortfall, perkLabel, planForKey } from './store/storeCatalog';
 import { type StoreTabId, trackStore } from './store/storeAnalytics';
-import { Icon, tone } from './store/storeUi';
+import { EmptyNote, Icon, tone } from './store/storeUi';
 import { CurrentPlanPanel } from './store/CurrentPlanPanel';
 import { PlansSection } from './store/PlansSection';
 import { PowersSection } from './store/PowersSection';
@@ -276,23 +276,22 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
             sounds.playClick();
             onOpenLikes?.();
           }}
-          className={cn(
-            'flex items-center gap-3 rounded-[var(--radius-md)] border p-3.5 text-left transition-transform active:scale-[0.98]',
-            tone.surface,
-          )}
+          className={cn('flex items-center gap-3.5 p-4 text-left transition-transform active:scale-[0.98]', tone.card)}
         >
-          <span className="w-10 h-10 rounded-full bg-gradient-to-tr from-[var(--coral-600)] to-[var(--coral-500)] flex items-center justify-center text-white shrink-0">
-            <Icon name="favorite" filled className="text-[20px]" />
+          <span className="w-11 h-11 rounded-full bg-gradient-to-tr from-[var(--coral-600)] to-[var(--coral-500)] flex items-center justify-center text-white shrink-0 shadow-[var(--shadow-coral)]">
+            <Icon name="favorite" filled className="text-[22px]" />
           </span>
           <span className="flex-1 min-w-0">
-            <span className={cn('block text-[14px] font-bold', tone.strong)}>
+            <span className={cn('block text-[15px] font-bold leading-tight', tone.strong)}>
               {whoLikedMe.count} {whoLikedMe.count === 1 ? 'persona te dio like' : 'personas te dieron like'}
             </span>
-            <span className={cn('block text-[12.5px]', tone.muted)}>
+            <span className={cn('block text-[12.5px] mt-0.5', tone.muted)}>
               {whoLikedMe.unlocked ? 'Tocá para verlas y responder' : 'Tocá para ver quiénes son'}
             </span>
           </span>
-          <Icon name="chevron_right" className={cn('text-[22px] shrink-0', tone.accent)} />
+          <span className={cn('w-9 h-9 rounded-full flex items-center justify-center shrink-0', tone.sunken, tone.accent)}>
+            <Icon name="chevron_right" className="text-[22px]" />
+          </span>
         </button>
       )}
 
@@ -316,13 +315,13 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
         <>
           {/* Planes / poderes / coins son decisiones distintas: cada una en su pestaña. */}
           <div
-            className="sticky z-20 -mx-1 px-1 py-1 flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-5"
+            className="sticky z-20 -mx-4 px-4 py-2 flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-5 bg-[var(--color-canvas)]/90 dark:bg-[#0A1120]/85 backdrop-blur-md"
             style={{ top: 'calc(4.5rem + env(safe-area-inset-top))' }}
           >
             <div
               role="tablist"
               aria-label="Secciones de la tienda"
-              className="flex items-center gap-1 p-1 w-full lg:w-[480px] lg:shrink-0 rounded-[var(--radius-pill)] border bg-white border-[var(--coral-100)] dark:bg-[var(--midnight-850)] dark:border-[var(--hairline)] shadow-elevation-sm"
+              className="flex items-center gap-1 p-1 w-full lg:w-[480px] lg:shrink-0 rounded-[var(--radius-pill)] border bg-white border-[var(--color-line)] dark:bg-[var(--midnight-850)] dark:border-[var(--hairline-strong)] shadow-elevation-sm"
             >
               {STORE_TABS.map((tab) => {
                 const selected = activeTab === tab.id;
@@ -341,13 +340,13 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
                     onClick={() => changeTab(tab.id)}
                     onKeyDown={handleTabKeyDown}
                     className={cn(
-                      'flex-1 h-10 rounded-[var(--radius-pill)] text-[13px] font-bold flex items-center justify-center gap-1.5 transition-colors',
+                      'flex-1 h-11 rounded-[var(--radius-pill)] text-[14px] font-bold flex items-center justify-center gap-1.5 transition-colors',
                       selected
-                        ? 'bg-gradient-to-r from-[var(--coral-600)] to-[var(--coral-500)] text-white shadow-elevation-sm'
+                        ? 'bg-gradient-to-r from-[var(--coral-600)] to-[var(--coral-500)] text-white shadow-[var(--shadow-coral)]'
                         : cn(tone.muted, 'hover:text-[var(--coral-600)] dark:hover:text-[var(--coral-300)]'),
                     )}
                   >
-                    <Icon name={tab.icon} filled={selected} className="text-[17px]" />
+                    <Icon name={tab.icon} filled={selected} className="text-[18px]" />
                     {tab.label}
                   </button>
                 );
@@ -355,7 +354,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
             </div>
             <p className={cn('hidden lg:block text-[13px]', tone.muted)}>{activeTabMeta.promise}</p>
           </div>
-          <p className={cn('lg:hidden -mt-3 px-1 text-[12.5px] text-center', tone.muted)}>{activeTabMeta.promise}</p>
+          <p className={cn('lg:hidden -mt-3 px-1 text-[13px] text-center leading-snug', tone.muted)}>{activeTabMeta.promise}</p>
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -379,9 +378,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
                     onSelect={selectItem}
                   />
                 ) : (
-                  <p className={cn('rounded-[var(--radius-md)] p-5 text-[13px] text-center', tone.sunken, tone.muted)}>
-                    No hay planes disponibles en este momento.
-                  </p>
+                  <EmptyNote icon="workspace_premium">No hay planes disponibles en este momento.</EmptyNote>
                 ))}
 
               {activeTab === 'poderes' &&
@@ -397,9 +394,7 @@ export const StoreView: React.FC<StoreViewProps> = ({ onOpenLikes, onOpenDiscove
                     onSeePlans={() => changeTab('planes')}
                   />
                 ) : (
-                  <p className={cn('rounded-[var(--radius-md)] p-5 text-[13px] text-center', tone.sunken, tone.muted)}>
-                    No hay poderes disponibles en este momento.
-                  </p>
+                  <EmptyNote icon="bolt">No hay poderes disponibles en este momento.</EmptyNote>
                 ))}
 
               {activeTab === 'coins' && (

@@ -393,6 +393,275 @@
   .icon-button:active {
     transform: scale(0.94);
   }
+
+  /* ============================================================
+     Capa de diseño compartida (rediseño mobile). Clases reutilizables y
+     theme-aware (resuelven light/dark solas vía html.dark) para que las
+     pantallas no repitan el mismo `isLight ? ... : ...` en cada nodo.
+     Todo es aditivo: no cambia colores de marca ni clases existentes.
+     ============================================================ */
+
+  /* --- Escala tipográfica (6 pasos, ritmo 4px). Manrope salvo .t-display. --- */
+  .t-display {
+    font-family: var(--font-display);
+    font-size: 32px;
+    line-height: 1.12;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .t-title {
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+  .t-heading {
+    font-size: 17px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .t-body {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .t-body-sm {
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .t-caption {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .t-overline {
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* --- Color de texto semántico, theme-aware --- */
+  .text-ink {
+    color: var(--text-on-light);
+  }
+  .text-ink-muted {
+    color: var(--text-on-light-muted);
+  }
+  .text-ink-faint {
+    color: var(--text-tertiary);
+  }
+  .dark .text-ink {
+    color: var(--text-primary);
+  }
+  .dark .text-ink-muted {
+    color: var(--text-secondary);
+  }
+  .dark .text-ink-faint {
+    color: var(--text-tertiary);
+  }
+
+  /* --- Superficies --- */
+  /* Tarjeta estándar: borde casi invisible + sombra corta. */
+  .surface-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid rgb(22 34 59 / 0.07);
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(10, 17, 32, 0.05), 0 8px 24px -16px rgba(10, 17, 32, 0.18);
+  }
+  .dark .surface-card {
+    border-color: var(--hairline);
+    background: var(--midnight-850);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -20px rgba(0, 0, 0, 0.6);
+  }
+  /* Superficie hundida (inputs, resúmenes, bloques de info). */
+  .surface-inset {
+    border-radius: var(--radius-md);
+    border: 1px solid rgb(22 34 59 / 0.06);
+    background: var(--cream-050);
+  }
+  .dark .surface-inset {
+    border-color: var(--hairline);
+    background: rgba(255, 255, 255, 0.04);
+  }
+  /* Divisores theme-aware (1px). */
+  .hairline-t {
+    border-top: 1px solid rgb(22 34 59 / 0.08);
+  }
+  .hairline-b {
+    border-bottom: 1px solid rgb(22 34 59 / 0.08);
+  }
+  .dark .hairline-t,
+  .dark .hairline-b {
+    border-color: var(--hairline);
+  }
+
+  /* --- Filas de navegación / listas (drawer, ajustes): ≥48px, hover suave. --- */
+  .nav-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    text-align: left;
+    color: var(--text-on-light);
+    transition: background-color 160ms ease, transform 120ms ease;
+    cursor: pointer;
+  }
+  .nav-row:hover {
+    background: rgb(22 34 59 / 0.05);
+  }
+  .nav-row:active {
+    background: rgb(22 34 59 / 0.08);
+    transform: scale(0.99);
+  }
+  .dark .nav-row {
+    color: var(--text-primary);
+  }
+  .dark .nav-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .dark .nav-row:active {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* --- Icono en contenedor (tinte rosa suave), para listas y pasos. --- */
+  .icon-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: var(--coral-100);
+    color: var(--coral-600);
+  }
+  .dark .icon-tile {
+    background: rgba(255, 107, 158, 0.14);
+    color: var(--coral-300);
+  }
+
+  /* --- CTAs hero (pill, 52px). Primario = rosa sólido + tinta oscura; secundario = contorno. --- */
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 52px;
+    padding: 0 20px;
+    border-radius: var(--radius-pill);
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: transform 150ms var(--ease-mely), filter 150ms ease, background-color 150ms ease;
+    user-select: none;
+  }
+  .btn-pill:active {
+    transform: scale(0.98);
+  }
+  .btn-pill-primary {
+    background: var(--coral-500);
+    color: var(--ink-on-coral);
+    box-shadow: var(--shadow-coral);
+  }
+  .btn-pill-primary:hover {
+    filter: brightness(1.04);
+  }
+  .btn-pill-secondary {
+    background: transparent;
+    color: var(--text-on-light);
+    border: 1.5px solid rgb(22 34 59 / 0.16);
+  }
+  .btn-pill-secondary:hover {
+    background: rgb(22 34 59 / 0.04);
+  }
+  .dark .btn-pill-secondary {
+    color: var(--text-primary);
+    border-color: var(--hairline-strong);
+  }
+  .dark .btn-pill-secondary:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* --- Link de texto rosa (acciones inline: "¿Olvidaste...?", "Registrate"). --- */
+  .text-link {
+    color: var(--coral-600);
+    font-weight: 700;
+    cursor: pointer;
+    text-underline-offset: 3px;
+  }
+  .text-link:hover {
+    text-decoration: underline;
+  }
+  .dark .text-link {
+    color: var(--coral-300);
+  }
+
+  /* --- Mensaje de error/alerta inline en formularios. --- */
+  .form-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(214, 81, 69, 0.3);
+    background: rgba(214, 81, 69, 0.08);
+    color: var(--danger-500);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .form-alert-success {
+    border-color: rgba(95, 161, 132, 0.35);
+    background: rgba(95, 161, 132, 0.1);
+    color: #3f7a5c;
+  }
+  .dark .form-alert-success {
+    color: #9cd0b4;
+  }
+
+  /* --- Separador "o continuá con". --- */
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-on-light-muted);
+  }
+  .or-divider::before,
+  .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgb(22 34 59 / 0.1);
+  }
+  .dark .or-divider {
+    color: var(--text-secondary);
+  }
+  .dark .or-divider::before,
+  .dark .or-divider::after {
+    background: var(--hairline-strong);
+  }
+
+  /* --- Contador/badge numérico compacto (nav, drawer). --- */
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-pill);
+    background: var(--coral-600);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

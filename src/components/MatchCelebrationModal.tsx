@@ -167,18 +167,18 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
                 onClose();
               }}
               aria-label="Cerrar"
-              className="absolute -top-2 right-0 w-9 h-9 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors"
+              className="absolute -top-2 right-0 w-11 h-11 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors"
             >
-              <span className="material-symbols-outlined text-[18px]">close</span>
+              <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
 
-            <span className="text-[13px] font-bold tracking-wide text-white/80 uppercase">FINDY</span>
+            <span className="text-[11px] font-extrabold tracking-[0.2em] text-[#ffa3c4] uppercase mt-2">Findy</span>
 
             <motion.h2
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.3 }}
-              className="text-[34px] italic font-semibold text-white mt-2"
+              className="text-[40px] leading-none italic font-semibold text-white mt-3"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Es un match
@@ -187,7 +187,7 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-[14px] text-white/75 mt-1.5"
+              className="text-[14px] text-white/75 mt-2 leading-snug max-w-[260px]"
             >
               A vos y a {profile.displayName} les gustaron mutuamente
             </motion.p>
@@ -256,18 +256,18 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
               </motion.div>
             )}
 
-            <div className="relative flex items-center justify-center mt-8 mb-9 h-[104px] w-[176px]">
+            <div className="relative flex items-center justify-center mt-8 mb-9 h-[120px] w-[208px]">
               <motion.div
                 initial={{ opacity: 0, x: 16, rotate: -6 }}
                 animate={{ opacity: 1, x: 0, rotate: -6 }}
                 transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 20 }}
-                className="absolute left-0 w-24 h-24 rounded-full p-[3px] bg-gradient-to-br from-white/40 to-white/10"
+                className="absolute left-0 w-28 h-28 rounded-full p-[3px] bg-gradient-to-br from-[#ff6b9e] to-[#ec4d86]/40 shadow-elevation-lg"
               >
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/70 bg-white/10 flex items-center justify-center">
+                <div className="w-full h-full rounded-full overflow-hidden border-[3px] border-[#0f1a2e] bg-white/10 flex items-center justify-center">
                   {myAvatar ? (
                     <img src={myAvatar} alt="Vos" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <span className="text-white/80 text-[22px] font-bold" aria-hidden="true">
+                    <span className="text-white/80 text-[26px] font-bold" aria-hidden="true">
                       {(user?.displayName ?? 'V').slice(0, 1).toUpperCase()}
                     </span>
                   )}
@@ -277,9 +277,9 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
                 initial={{ opacity: 0, x: -16, rotate: 6 }}
                 animate={{ opacity: 1, x: 0, rotate: 6 }}
                 transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 20 }}
-                className="absolute right-0 w-24 h-24 rounded-full p-[3px] bg-gradient-to-br from-white/40 to-white/10"
+                className="absolute right-0 w-28 h-28 rounded-full p-[3px] bg-gradient-to-br from-[#ec4d86]/40 to-[#ff6b9e] shadow-elevation-lg"
               >
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/70">
+                <div className="w-full h-full rounded-full overflow-hidden border-[3px] border-[#0f1a2e]">
                   <ProfilePhoto
                     url={profile.photos[0]?.url}
                     name={profile.displayName}
@@ -291,9 +291,9 @@ export const MatchCelebrationModal: React.FC<MatchCelebrationModalProps> = ({
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4, type: 'spring', stiffness: 400, damping: 18 }}
-                className="absolute z-10 w-11 h-11 rounded-full bg-gradient-to-br from-[#ec4d86] to-[#ff6b9e] flex items-center justify-center shadow-[0_6px_18px_rgba(225,29,72,0.5)]"
+                className="absolute z-10 w-12 h-12 rounded-full bg-gradient-to-br from-[#ec4d86] to-[#ff6b9e] flex items-center justify-center shadow-[0_8px_22px_rgba(236,77,134,0.6)] ring-4 ring-[#0f1a2e]"
               >
-                <span className="material-symbols-outlined text-[20px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
+                <span className="material-symbols-outlined text-[22px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
                   favorite
                 </span>
               </motion.div>
