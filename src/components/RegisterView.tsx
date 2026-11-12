@@ -298,10 +298,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className={`w-full max-w-[420px] mx-auto py-6 px-6 flex flex-col pb-12 ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}
+      className="w-full max-w-[420px] mx-auto px-6 flex flex-col text-ink"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 40px)' }}
     >
       {/* Back + step dots, onboarding chrome */}
-      <div className="flex items-center gap-3.5 mb-6">
+      <div className="flex items-center gap-3 mb-5">
         <button
           type="button"
           onClick={() => {
@@ -312,18 +313,23 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
               onGoToLogin();
             }
           }}
-          className={`w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center focus:outline-none cursor-pointer ${
-            isLight ? 'text-[#16223b] hover:bg-[#efe7d8]' : 'text-[#f5f1e8] hover:bg-white/8'
+          className={`w-11 h-11 -ml-2.5 rounded-full flex items-center justify-center focus:outline-none cursor-pointer transition-colors ${
+            isLight ? 'text-[#16223b] hover:bg-black/5' : 'text-[#f5f1e8] hover:bg-white/8'
           }`}
           aria-label="Volver"
         >
-          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+          <span className="material-symbols-outlined text-[24px]">arrow_back</span>
         </button>
-        <div className="flex items-center gap-1.5">
-          <span className={`h-1 rounded-full transition-all duration-300 ${step >= 1 ? 'w-[22px] bg-[#ec4d86]' : `w-[22px] ${isLight ? 'bg-[#efe7d8]' : 'bg-white/12'}`}`} />
-          <span className={`h-1 rounded-full transition-all duration-300 ${step >= 2 ? 'w-[22px] bg-[#ec4d86]' : `w-[22px] ${isLight ? 'bg-[#efe7d8]' : 'bg-white/12'}`}`} />
-          <span className={`h-1 rounded-full transition-all duration-300 ${step >= 3 ? 'w-[22px] bg-[#ec4d86]' : `w-[22px] ${isLight ? 'bg-[#efe7d8]' : 'bg-white/12'}`}`} />
+        {/* Progreso: 3 segmentos iguales + "Paso n de 3" para que el avance se lea sin contar barritas. */}
+        <div className="flex-1 flex items-center gap-1.5" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step} aria-label={`Paso ${step} de 3`}>
+          {[1, 2, 3].map((n) => (
+            <span
+              key={n}
+              className={`h-1.5 flex-1 max-w-[48px] rounded-full transition-all duration-300 ${step >= n ? 'bg-[#ec4d86]' : isLight ? 'bg-black/10' : 'bg-white/12'}`}
+            />
+          ))}
         </div>
+        <span className="t-caption font-bold text-ink-muted tabular-nums">Paso {step} de 3</span>
       </div>
 
       <AnimatePresence mode="wait" custom={direction}>
@@ -335,12 +341,12 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
           exit={{ opacity: 0, x: direction * -16 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
-          <span className="font-headline-md text-[22px] font-bold block">{stepTitle}</span>
-          <p className={`text-[13.5px] mt-1.5 mb-7 leading-relaxed ${isLight ? 'text-[#5b6478]' : 'text-[#8a93a8]'}`}>{stepSubtitle}</p>
+          <span className="t-display text-[30px] text-ink block">{stepTitle}</span>
+          <p className="t-body text-ink-muted mt-2.5 mb-7 max-w-[34ch]">{stepSubtitle}</p>
         </motion.div>
       </AnimatePresence>
 
-      <form onSubmit={handleCompleteRegistration} className="flex flex-col gap-4">
+      <form onSubmit={handleCompleteRegistration} className="flex flex-col gap-5">
        <AnimatePresence mode="wait" custom={direction}>
         {/* STEP 1: Personal Identification */}
         {step === 1 && (
@@ -351,33 +357,30 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
             initial="enter"
             animate="center"
             exit="exit"
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-5"
           >
             {step1Error && (
-              <div
-                className={`p-2.5 rounded-[var(--radius-md)] border text-[11px] ${
-                  isLight ? 'bg-red-50 border-red-200 text-red-600' : 'bg-red-500/10 border-red-500/30 text-red-300'
-                }`}
-              >
-                {step1Error}
+              <div className="form-alert" role="alert">
+                <span className="material-symbols-outlined text-[18px] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+                <span>{step1Error}</span>
               </div>
             )}
 
             <div>
-              <Label className="mb-1 block">Nombre</Label>
+              <Label className="mb-2 block">Nombre</Label>
               <Input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Mariel Juárez" />
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="mb-1 block">Fecha de nacimiento</Label>
+                <Label className="mb-2 block">Fecha de nacimiento</Label>
                 <Input type="date" required value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
               </div>
 
               <div>
-                <Label className="mb-1 block">Ciudad</Label>
+                <Label className="mb-2 block">Ciudad</Label>
                 <Select value={city} onValueChange={setCity}>
-                  <SelectTrigger className="text-[12px]">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -391,11 +394,11 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="mb-1 block">Género</Label>
+                <Label className="mb-2 block">Género</Label>
                 <Select value={gender} onValueChange={(v) => setGender(v as Gender)}>
-                  <SelectTrigger className="text-[12px]">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -409,14 +412,14 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
               </div>
 
               <div>
-                <Label className="mb-1 block">Ocupación</Label>
+                <Label className="mb-2 block">Ocupación</Label>
                 <Input type="text" value={job} onChange={(e) => setJob(e.target.value)} placeholder="Opcional" />
               </div>
             </div>
 
             <div>
-              <Label className="mb-1.5 block">Buscás conocer a</Label>
-              <div className="flex flex-wrap gap-1.5">
+              <Label className="mb-2 block">Buscás conocer a</Label>
+              <div className="flex flex-wrap gap-2">
                 {GENDER_OPTIONS.map((g) => {
                   const isSelected = seeking.includes(g.value);
                   return (
@@ -424,12 +427,12 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
                       key={g.value}
                       type="button"
                       onClick={() => toggleSeeking(g.value)}
-                      className={`px-3 py-1.5 rounded-full text-[12px] transition-all border cursor-pointer ${
+                      className={`h-10 px-4 rounded-full text-[13.5px] font-bold transition-all border-[1.5px] cursor-pointer active:scale-[0.97] ${
                         isSelected
-                          ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold border-transparent'
+                          ? 'bg-[#ff6b9e] text-[#3a0a1e] border-[#ff6b9e]'
                           : isLight
-                          ? 'bg-[#fcf9f2] text-[#2e5570] border-[#efe7d8] hover:border-[#ec4d86]/40'
-                          : 'bg-white/5 text-[#8a93a8] border-white/10 hover:border-[#ec4d86]/40'
+                          ? 'bg-transparent text-[#16223b] border-black/15 hover:border-[#ec4d86]/50'
+                          : 'bg-transparent text-[#f5f1e8] border-white/15 hover:border-[#ff6b9e]/50'
                       }`}
                     >
                       {g.label}
@@ -440,7 +443,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
             </div>
 
             <div>
-              <Label className="mb-1 block">Email</Label>
+              <Label className="mb-2 block">Email</Label>
               <Input
                 type="email"
                 required
@@ -453,13 +456,13 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
             </div>
 
             {googleData ? (
-              <div className="flex items-center gap-2 p-2.5 rounded-[var(--radius-md)] bg-[#3f7a5c]/10 border border-[#3f7a5c]/30 text-[#3f7a5c] text-[11px]">
-                <span className="material-symbols-outlined text-[16px]">verified</span>
+              <div className="form-alert form-alert-success items-center">
+                <span className="material-symbols-outlined text-[18px] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                 <span>Cuenta verificada con Google. No necesitás contraseña.</span>
               </div>
             ) : (
               <div>
-                <Label className="mb-1 block">Contraseña</Label>
+                <Label className="mb-2 block">Contraseña</Label>
                 <Input
                   type="password"
                   required
@@ -471,16 +474,14 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
               </div>
             )}
 
-            <Button type="button" variant="primary" onClick={handleStep1Continue} className="mt-1 w-full normal-case tracking-normal text-[15px]">
+            <Button type="button" variant="primary" size="lg" onClick={handleStep1Continue} className="mt-1 w-full">
               Continuar
             </Button>
 
             {!googleData && isGoogleAuthAvailable() && (
               <>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className={`flex-1 h-px ${isLight ? 'bg-[#efe7d8]' : 'bg-white/10'}`} />
-                  <span className={`text-[12px] ${isLight ? 'text-[#5b6478]' : 'text-[#8a93a8]'}`}>o continuá con</span>
-                  <span className={`flex-1 h-px ${isLight ? 'bg-[#efe7d8]' : 'bg-white/10'}`} />
+                <div className="or-divider mt-1">
+                  <span>o continuá con</span>
                 </div>
                 <GoogleAuthButton onCredential={handleGoogleCredential} text="signup_with" />
               </>
@@ -497,25 +498,29 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
             initial="enter"
             animate="center"
             exit="exit"
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-5"
           >
-            <div className="flex flex-col items-center gap-3 py-2">
-              <div className={`w-28 h-28 rounded-full overflow-hidden border ${isLight ? 'border-[#efe7d8] bg-[#fcf9f2]' : 'border-white/10 bg-white/5'} flex items-center justify-center`}>
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div
+                className={`relative w-36 h-36 rounded-full overflow-hidden flex items-center justify-center ${
+                  avatarPreview ? '' : 'border-2 border-dashed'
+                } ${isLight ? 'border-[#ec4d86]/40 bg-[#ff6b9e]/10' : 'border-[#ff6b9e]/40 bg-[#ff6b9e]/12'}`}
+                style={avatarPreview ? { boxShadow: '0 0 0 3px var(--coral-500), 0 16px 32px -16px rgba(255,107,158,0.5)' } : undefined}
+              >
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                 ) : (
-                  <span className="material-symbols-outlined text-[44px] text-[#ec4d86]">person</span>
+                  <span className="material-symbols-outlined text-[56px] text-[#ec4d86]">add_a_photo</span>
                 )}
               </div>
               <label
-                className={`px-4 py-2 rounded-full border cursor-pointer text-[13px] font-bold ${
-                  isLight ? 'bg-[#fcf9f2] border-[#efe7d8] text-[#ec4d86]' : 'bg-white/5 border-white/10 text-[#ffa3c4]'
-                }`}
+                className={`btn-pill btn-pill-secondary !w-auto !h-11 !px-5 text-[14px] ${isLight ? 'text-[#ec4d86]' : 'text-[#ffa3c4]'}`}
               >
+                <span className="material-symbols-outlined text-[18px]">photo_camera</span>
                 {avatarFile ? 'Cambiar foto' : 'Subir foto'}
                 <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
               </label>
-              <p className={`text-[11.5px] text-center max-w-[280px] ${isLight ? 'text-[#5b6478]' : 'text-[#8a93a8]'}`}>
+              <p className="t-body-sm text-ink-muted text-center max-w-[280px]">
                 Podés subirla ahora o después desde tu perfil.
               </p>
             </div>
@@ -527,7 +532,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
                 sounds.playClick();
                 goToStep(3);
               }}
-              className="mt-1 w-full normal-case tracking-normal text-[15px]"
+              size="lg"
+              className="mt-1 w-full"
             >
               Continuar
             </Button>
@@ -543,20 +549,17 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
             initial="enter"
             animate="center"
             exit="exit"
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-5"
           >
             {submitError && (
-              <div
-                className={`p-2.5 rounded-[var(--radius-md)] border text-[11px] ${
-                  isLight ? 'bg-red-50 border-red-200 text-red-600' : 'bg-red-500/10 border-red-500/30 text-red-300'
-                }`}
-              >
-                {submitError}
+              <div className="form-alert" role="alert">
+                <span className="material-symbols-outlined text-[18px] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+                <span>{submitError}</span>
               </div>
             )}
 
             <div>
-              <Label className="mb-1 block">Bio</Label>
+              <Label className="mb-2 block">Bio</Label>
               <Textarea
                 rows={2}
                 value={bio}
@@ -566,8 +569,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
             </div>
 
             <div>
-              <Label className="mb-1.5 block">Intereses ({selectedInterestIds.length}/6)</Label>
-              <div className="flex flex-wrap gap-1.5">
+              <Label className="mb-2 block">Intereses ({selectedInterestIds.length}/6)</Label>
+              <div className="flex flex-wrap gap-2">
                 {availableInterests.map((interest) => {
                   const isSelected = selectedInterestIds.includes(interest.id);
                   return (
@@ -575,12 +578,12 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
                       key={interest.id}
                       type="button"
                       onClick={() => toggleInterest(interest.id)}
-                      className={`px-3 py-1 rounded-full text-[11.5px] transition-all border cursor-pointer ${
+                      className={`h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all border-[1.5px] cursor-pointer active:scale-[0.97] ${
                         isSelected
-                          ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold border-transparent'
+                          ? 'bg-[#ff6b9e] text-[#3a0a1e] border-[#ff6b9e] font-bold'
                           : isLight
-                          ? 'bg-[#fcf9f2] text-[#2e5570] border-[#efe7d8] hover:border-[#ec4d86]/40'
-                          : 'bg-white/5 text-[#8a93a8] border-white/10 hover:border-[#ec4d86]/40'
+                          ? 'bg-transparent text-[#16223b] border-black/15 hover:border-[#ec4d86]/50'
+                          : 'bg-transparent text-[#f5f1e8] border-white/15 hover:border-[#ff6b9e]/50'
                       }`}
                     >
                       {interest.name}
@@ -591,24 +594,24 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
             </div>
 
             <div>
-              <Label className="mb-1 block">Un prompt para romper el hielo (opcional)</Label>
+              <Label className="mb-2 block">Un prompt para romper el hielo (opcional)</Label>
               <Input
                 type="text"
                 value={promptQ}
                 onChange={(e) => setPromptQ(e.target.value)}
-                className="mb-1.5 font-medium text-[#ec4d86] dark:text-[#ffa3c4]"
+                className="mb-2 font-semibold text-[#ec4d86] dark:text-[#ffa3c4]"
               />
               <Input type="text" value={promptA} onChange={(e) => setPromptA(e.target.value)} placeholder="Tu respuesta..." />
             </div>
 
             {/* Single combined consent block, not a wall of checkboxes */}
             <div className="flex flex-col gap-2.5">
-              <Label className="flex items-start gap-2.5 cursor-pointer select-none normal-case tracking-normal text-[12px] font-normal leading-relaxed text-[#5b6478] dark:text-[#8a93a8]">
-                <Checkbox required checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} className="mt-0.5 shrink-0" />
+              <Label className="flex items-start gap-3 cursor-pointer select-none text-[13.5px] font-medium leading-relaxed text-ink-muted py-1">
+                <Checkbox required checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} className="mt-px shrink-0" />
                 <span>Acepto los <strong>Términos y condiciones</strong> de FINDY.</span>
               </Label>
-              <Label className="flex items-start gap-2.5 cursor-pointer select-none normal-case tracking-normal text-[12px] font-normal leading-relaxed text-[#5b6478] dark:text-[#8a93a8]">
-                <Checkbox required checked={acceptPrivacy} onCheckedChange={(v) => setAcceptPrivacy(v === true)} className="mt-0.5 shrink-0" />
+              <Label className="flex items-start gap-3 cursor-pointer select-none text-[13.5px] font-medium leading-relaxed text-ink-muted py-1">
+                <Checkbox required checked={acceptPrivacy} onCheckedChange={(v) => setAcceptPrivacy(v === true)} className="mt-px shrink-0" />
                 <span>Acepto la <strong>Política de privacidad</strong> y la verificación presencial en cada encuentro.</span>
               </Label>
             </div>
@@ -619,7 +622,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
               variant="primary"
               size="lg"
               disabled={isIssuing || !acceptTerms || !acceptPrivacy}
-              className="w-full mt-1 normal-case tracking-normal text-[15px]"
+              className="w-full mt-1"
             >
               {isIssuing ? (
                 <span className="inline-flex items-center gap-2">
@@ -635,15 +638,15 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onGoToLogin, googleP
        </AnimatePresence>
       </form>
 
-      <div className="mt-8 flex items-center justify-center gap-1.5">
-        <span className={`text-[13.5px] ${isLight ? 'text-[#5b6478]' : 'text-[#8a93a8]'}`}>¿Ya tenés cuenta?</span>
+      <div className="mt-8 flex items-center justify-center gap-1.5 min-h-[44px]">
+        <span className="text-[14px] text-ink-muted">¿Ya tenés cuenta?</span>
         <button
           type="button"
           onClick={() => {
             sounds.playClick();
             onGoToLogin();
           }}
-          className="text-[13.5px] font-bold text-[#ec4d86] hover:underline cursor-pointer"
+          className="text-link text-[14px] h-11 px-1 inline-flex items-center"
         >
           Iniciá sesión
         </button>

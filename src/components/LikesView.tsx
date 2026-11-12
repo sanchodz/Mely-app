@@ -59,23 +59,44 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
     );
   };
 
+  const count = data?.count ?? 0;
+  const titleColor = isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]';
+  const mutedColor = isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]';
+  const tileClass = `relative rounded-[var(--radius-lg)] overflow-hidden aspect-[3/4] ${
+    isLight ? 'bg-[#efe7d8] shadow-elevation-sm' : 'bg-[#131f36] ring-1 ring-white/8'
+  }`;
+
   return (
-    <div className="w-full flex-1 flex flex-col gap-4">
+    <div className="w-full flex-1 flex flex-col gap-4 pb-8">
       {/* Header */}
-      <div className="flex flex-col gap-0.5 px-0.5">
-        <h1
-          className="font-display text-[22px] font-semibold"
-          style={{ color: isLight ? 'var(--text-on-light)' : 'var(--text-primary)' }}
-        >
-          Me gusta
-        </h1>
-        <p className="text-[12.5px]" style={{ color: isLight ? 'var(--text-on-light-muted)' : 'var(--text-secondary)' }}>
-          {isLoading ? 'Cargando…' : `${data?.count ?? 0} ${(data?.count ?? 0) === 1 ? 'persona te dio like' : 'personas te dieron like'}`}
-        </p>
+      <div className="flex items-end justify-between gap-3 px-0.5">
+        <div className="min-w-0">
+          <p className="section-kicker">{tab === 'enviados' ? 'Enviados' : 'Recibidos'}</p>
+          <h1 className={`mt-1 text-[22px] font-extrabold tracking-tight leading-tight ${titleColor}`}>
+            {isLoading ? 'Cargando…' : count === 0 ? 'Todavía nadie' : `${count} ${count === 1 ? 'persona' : 'personas'}`}
+          </h1>
+          <p className={`text-[12.5px] mt-0.5 ${mutedColor}`}>
+            {isLoading ? ' ' : count === 1 ? 'te dio like' : 'te dieron like'}
+          </p>
+        </div>
+        {!isLoading && count > 0 && (
+          <span
+            className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
+              isLight ? 'bg-[#ffe0ec] text-[#ec4d86]' : 'bg-[#ec4d86]/15 text-[#ffa3c4]'
+            }`}
+            aria-hidden="true"
+          >
+            <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+          </span>
+        )}
       </div>
 
-      {/* Tab pills */}
-      <div className="flex gap-2 px-0.5">
+      {/* Tabs: control segmentado, una sola pieza en vez de dos pastillas sueltas. */}
+      <div
+        className={`grid grid-cols-2 gap-1 p-1 rounded-full ${isLight ? 'bg-[#efe7d8]' : 'bg-white/6'}`}
+        role="tablist"
+        aria-label="Likes"
+      >
         {(
           [
             { id: 'nuevos' as const, label: 'Nuevos' },
@@ -87,21 +108,20 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
             <button
               key={t.id}
               type="button"
+              role="tab"
+              aria-selected={active}
               onClick={() => {
                 sounds.playClick();
                 setTab(t.id);
               }}
               aria-pressed={active}
-              className="min-h-[40px] px-4 rounded-[var(--radius-pill)] text-[12.5px] font-bold transition-all active:scale-95"
-              style={
+              className={`h-10 rounded-full text-[13px] font-bold transition-all active:scale-[0.97] ${
                 active
-                  ? { background: 'var(--coral-500)', color: 'var(--ink-on-coral)' }
-                  : {
-                      background: 'transparent',
-                      border: `1px solid ${isLight ? 'rgba(22,34,59,0.12)' : 'var(--hairline-strong)'}`,
-                      color: isLight ? 'var(--text-on-light-muted)' : 'var(--text-secondary)',
-                    }
-              }
+                  ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white shadow-elevation-sm'
+                  : isLight
+                  ? 'text-[#5b6478]'
+                  : 'text-[#a9b2c9]'
+              }`}
             >
               {t.label}
             </button>
@@ -112,11 +132,11 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
       {tab === 'nuevos' && (
         <div className="relative flex-1">
           {isLoading && (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-              <Skeleton className="h-40 w-full rounded-[var(--radius-lg)]" />
-              <Skeleton className="h-40 w-full rounded-[var(--radius-lg)]" />
-              <Skeleton className="h-40 w-full rounded-[var(--radius-lg)]" />
-              <Skeleton className="h-40 w-full rounded-[var(--radius-lg)]" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="aspect-[3/4] w-full rounded-[var(--radius-lg)]" />
+              <Skeleton className="aspect-[3/4] w-full rounded-[var(--radius-lg)]" />
+              <Skeleton className="aspect-[3/4] w-full rounded-[var(--radius-lg)]" />
+              <Skeleton className="aspect-[3/4] w-full rounded-[var(--radius-lg)]" />
             </div>
           )}
 
@@ -132,20 +152,15 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
           {!isLoading && data && data.count > 0 && !data.unlocked && (
             <div className="relative">
               {/* Grid de fotos reales, desenfocadas hasta desbloquear */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3" style={{ filter: 'blur(7px)', opacity: 0.55, pointerEvents: 'none' }}>
+              <div className="grid grid-cols-2 gap-3" style={{ filter: 'blur(9px)', opacity: 0.5, pointerEvents: 'none' }} aria-hidden="true">
                 {(data.profiles.length > 0 ? data.profiles : Array.from({ length: Math.min(data.count, 4) })).slice(0, 4).map((p: any, i: number) => (
-                  <div key={p?.id ?? i} className="relative aspect-[3/4] w-full rounded-[var(--radius-lg)] overflow-hidden flex items-center justify-center" style={{ background: 'var(--midnight-850)' }}>
+                  <div key={p?.id ?? i} className={`${tileClass} flex items-center justify-center`}>
                     {p?.photos?.[0]?.url ? (
                       <img src={p.photos[0].url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       <span className="material-symbols-outlined text-[28px]" style={{ color: 'var(--coral-500)', opacity: 0.4 }}>
                         person
                       </span>
-                    )}
-                    {p?.displayName && (
-                      <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent">
-                        <p className="text-white text-[12.5px] font-bold truncate">{p.displayName}, {p.age}</p>
-                      </div>
                     )}
                   </div>
                 ))}
@@ -154,23 +169,23 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
               {/* Overlay de desbloqueo, centrado sobre el grid */}
               <div className="absolute inset-0 flex items-center justify-center p-4">
                 <div
-                  className="w-full max-w-[280px] p-4 rounded-[var(--radius-lg)] border text-center flex flex-col items-center gap-2 shadow-[var(--shadow-lg)]"
-                  style={{
-                    background: isLight ? '#FFFFFF' : 'var(--midnight-900)',
-                    borderColor: isLight ? 'rgba(22,34,59,0.1)' : 'var(--hairline-strong)',
-                  }}
+                  className={`w-full max-w-[300px] p-6 rounded-[var(--radius-lg)] border text-center flex flex-col items-center gap-2 shadow-elevation-lg ${
+                    isLight ? 'bg-white border-[#ffe0ec]' : 'bg-[#0f1a2e] border-white/10'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-[26px]" style={{ color: 'var(--coral-500)' }}>
-                    lock
+                  <span
+                    className={`w-14 h-14 rounded-full flex items-center justify-center mb-1 ${
+                      isLight ? 'bg-[#ffe0ec] text-[#ec4d86]' : 'bg-[#ec4d86]/15 text-[#ffa3c4]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[28px]">lock</span>
                   </span>
-                  <p className="text-[13.5px] font-bold" style={{ color: isLight ? 'var(--text-on-light)' : 'var(--text-primary)' }}>
-                    Ver quién te dio like
+                  <p className={`text-[17px] font-extrabold tracking-tight ${titleColor}`}>Ver quién te dio like</p>
+                  <p className={`text-[12.5px] leading-relaxed max-w-[230px] ${mutedColor}`}>
+                    {count} {count === 1 ? 'persona espera' : 'personas esperan'} tu respuesta. Desbloqueá la lista con monedas o Premium.
                   </p>
-                  <p className="text-[11.5px]" style={{ color: isLight ? 'var(--text-on-light-muted)' : 'var(--text-secondary)' }}>
-                    Desbloqueá esta lista con monedas o Premium.
-                  </p>
-                  <Button variant="primary" onClick={handleUnlock} disabled={purchase.isPending} className="w-full gap-1.5 mt-1">
-                    <span className="material-symbols-outlined text-[16px]">lock_open</span>
+                  <Button variant="primary" onClick={handleUnlock} disabled={purchase.isPending} className="w-full h-12 rounded-full gap-2 mt-2 text-[14px]">
+                    <span className="material-symbols-outlined text-[18px]">lock_open</span>
                     <span>Desbloquear · {likesUnlockPrice} ◉</span>
                   </Button>
                 </div>
@@ -179,26 +194,22 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
           )}
 
           {!isLoading && data && data.unlocked && data.profiles.length > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {data.profiles.map((p) => (
-                <div
-                  key={p.id}
-                  className="relative rounded-[var(--radius-lg)] overflow-hidden border aspect-[3/4]"
-                  style={{ borderColor: isLight ? 'rgba(22,34,59,0.1)' : 'var(--hairline-strong)', background: 'var(--midnight-850)' }}
-                >
+                <div key={p.id} className={tileClass}>
                   {p.photos[0]?.url && (
                     <img src={p.photos[0].url} alt={p.displayName} loading="lazy" decoding="async" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   )}
-                  <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent">
-                    <p className="text-white text-[12.5px] font-bold truncate">{p.displayName}, {p.age}</p>
+                  <div className="absolute inset-x-0 bottom-0 p-3 pt-10 bg-gradient-to-t from-black/85 via-black/45 to-transparent">
+                    <p className="text-white text-[14px] font-bold truncate drop-shadow-xs">{p.displayName}, {p.age}</p>
                     <Button
                       size="sm"
                       variant="primary"
                       onClick={() => handleLikeBack(p.id)}
                       disabled={like.isPending}
-                      className="w-full h-7 mt-1.5 gap-1 text-[11px]"
+                      className="w-full h-10 mt-2 gap-1.5 rounded-full text-[12.5px]"
                     >
-                      <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                      <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
                       <span>Me gusta</span>
                     </Button>
                   </div>
@@ -220,16 +231,12 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
             />
           ) : (
             <>
-              <p className="text-[11.5px] px-0.5 mb-3" style={{ color: isLight ? 'var(--text-on-light-muted)' : 'var(--text-secondary)' }}>
+              <p className={`text-[12px] px-0.5 mb-3 leading-snug ${mutedColor}`}>
                 {sentLikes.length} {sentLikes.length === 1 ? 'like enviado' : 'likes enviados'} desde este teléfono. Si hay match, aparece en Mensajes.
               </p>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {sentLikes.map((s) => (
-                  <div
-                    key={s.profileId}
-                    className="relative rounded-[var(--radius-lg)] overflow-hidden border aspect-[3/4]"
-                    style={{ borderColor: isLight ? 'rgba(22,34,59,0.1)' : 'var(--hairline-strong)', background: 'var(--midnight-850)' }}
-                  >
+                  <div key={s.profileId} className={tileClass}>
                     {s.photoUrl ? (
                       <img src={s.photoUrl} alt={s.displayName} loading="lazy" decoding="async" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
@@ -239,9 +246,9 @@ export const LikesView: React.FC<LikesViewProps> = ({ likesUnlockPrice, onOpenCh
                         </span>
                       </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent">
-                      <p className="text-white text-[12.5px] font-bold truncate">{s.displayName}, {s.age}</p>
-                      <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-white/85">
+                    <div className="absolute inset-x-0 bottom-0 p-3 pt-10 bg-gradient-to-t from-black/85 via-black/45 to-transparent">
+                      <p className="text-white text-[14px] font-bold truncate drop-shadow-xs">{s.displayName}, {s.age}</p>
+                      <span className="mt-1.5 inline-flex items-center gap-1 h-6 px-2 rounded-full bg-white/15 border border-white/20 text-[10.5px] font-bold text-white">
                         <span className="material-symbols-outlined text-[12px]">schedule</span>
                         A la espera
                       </span>

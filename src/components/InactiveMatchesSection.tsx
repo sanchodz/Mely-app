@@ -43,47 +43,50 @@ export const InactiveMatchesSection: React.FC<InactiveMatchesSectionProps> = ({ 
   };
 
   return (
-    <section className="flex flex-col gap-2.5">
-      <div className="flex items-baseline justify-between px-1">
-        <h3
-          className={`text-[16px] italic font-semibold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Se enfriaron
-        </h3>
-        <span className={`text-[10.5px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+    <section className="flex flex-col gap-3">
+      <div className="flex items-end justify-between gap-3 px-0.5">
+        <div className="min-w-0">
+          <p className={`text-[11px] font-bold uppercase tracking-[0.14em] ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+            Se enfriaron
+          </p>
+          <h3 className={`text-[18px] font-bold leading-tight mt-0.5 ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+            {inactive.length} {inactive.length === 1 ? 'match sin respuesta' : 'matches sin respuesta'}
+          </h3>
+        </div>
+        <span className={`text-[12px] shrink-0 text-right ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
           {includedLeft === Infinity
-            ? 'Reactivar está incluido en tu plan'
+            ? 'Incluido en tu plan'
             : includedLeft > 0
-              ? `Te ${includedLeft === 1 ? 'queda' : 'quedan'} ${includedLeft} incluida${includedLeft === 1 ? '' : 's'}`
+              ? `${includedLeft} incluida${includedLeft === 1 ? '' : 's'}`
               : 'Nadie escribió a tiempo'}
         </span>
       </div>
       <div
-        className={`rounded-[var(--radius-md)] border divide-y ${
-          isLight ? 'bg-white border-[#ffe0ec] divide-[#ffe0ec]' : 'bg-[#0f1a2e] border-[#ec4d86]/25 divide-[#ec4d86]/15'
+        className={`rounded-2xl divide-y overflow-hidden ${
+          isLight ? 'bg-white shadow-elevation-sm divide-[#16223b]/6' : 'bg-[#131f36] divide-white/6'
         }`}
       >
         {inactive.map((match) => (
-          <div key={match.id} className="p-3 flex items-center gap-3">
+          <div key={match.id} className="pl-3 pr-3 py-3 flex items-center gap-3">
             <ProfilePhoto
               url={match.other.photos[0]?.url}
               name={match.other.displayName}
-              className="w-11 h-11 rounded-xl border border-[#ffe0ec]/60 dark:border-white/10 grayscale"
+              className="w-12 h-12 rounded-2xl grayscale opacity-80"
             />
             <div className="flex-1 min-w-0">
-              <p className={`text-[13px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+              <p className={`text-[15px] font-bold leading-tight truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
                 {match.other.displayName}
               </p>
-              <p className={`text-[10.5px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>{costLabel}</p>
+              <p className={`text-[12px] mt-0.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{costLabel}</p>
             </div>
             <Button
               size="sm"
               variant="primary"
               disabled={reactivate.isPending}
               onClick={() => handleReactivate(match.id, match.other.displayName)}
-              className="h-8 px-3 rounded-xl text-[10.5px] shrink-0"
+              className="h-10 px-4 rounded-full text-[13px] font-bold shrink-0 gap-1.5"
             >
+              <span className="material-symbols-outlined text-[16px]">local_fire_department</span>
               Reactivar
             </Button>
           </div>

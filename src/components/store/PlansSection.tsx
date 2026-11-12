@@ -55,11 +55,11 @@ const PriceBlock: React.FC<{ plan: PlanDefinition; item: ShopItem; large?: boole
   const perDay = coinsPerDay(item.price, plan.durationDays);
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-baseline gap-1.5 flex-wrap">
-        <Coins amount={item.price} className={cn('font-bold tracking-tight', large ? 'text-[32px]' : 'text-[24px]', tone.strong)} />
-        <span className={cn('text-[13px]', tone.muted)}>por {plan.durationDays} días</span>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <Coins amount={item.price} className={cn('font-bold tracking-tight leading-none', large ? 'text-[34px]' : 'text-[26px]', tone.strong)} />
+        <span className={cn('text-[14px]', tone.muted)}>por {plan.durationDays} días</span>
       </div>
-      <span className={cn('text-[12px]', tone.muted)}>
+      <span className={cn('text-[12.5px]', tone.faint)}>
         {perDay !== null && <>≈ {perDay.toLocaleString('es-AR')} coins por día</>}
         {item.priceUsd != null && <> · ≈ US$ {item.priceUsd.toFixed(2)}</>}
       </span>
@@ -84,20 +84,16 @@ const Affordability: React.FC<{ price: number; balance: number }> = ({ price, ba
 /** Beneficio = qué es + para qué te sirve. El "para qué" es lo que se vende. */
 const BenefitList: React.FC<{ plan: PlanDefinition; inheritsFrom?: string; heading?: string }> = ({ plan, inheritsFrom, heading }) => (
   <div className="flex flex-col gap-3">
-    {(heading || inheritsFrom) && (
-      <p className={cn('text-[11.5px] font-semibold uppercase tracking-[0.12em]', tone.muted)}>
-        {heading ?? `Todo lo de ${inheritsFrom}, y además`}
-      </p>
-    )}
-    <ul className="flex flex-col gap-3">
+    {(heading || inheritsFrom) && <p className={tone.label}>{heading ?? `Todo lo de ${inheritsFrom}, y además`}</p>}
+    <ul className="flex flex-col gap-3.5">
       {plan.benefits.map((b) => (
         <li key={b.title} className="flex items-start gap-3">
-          <span className={cn('w-8 h-8 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0', accentTile(plan.accent))}>
-            <Icon name={b.icon} filled className="text-[17px]" />
+          <span className={cn('w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0', accentTile(plan.accent))}>
+            <Icon name={b.icon} filled className="text-[18px]" />
           </span>
           <span className="min-w-0 pt-0.5">
-            <span className={cn('block text-[13.5px] font-bold leading-snug', tone.strong)}>{b.title}</span>
-            <span className={cn('block text-[12.5px] leading-snug mt-0.5', tone.muted)}>{b.outcome}</span>
+            <span className={cn('block text-[14px] font-bold leading-snug', tone.strong)}>{b.title}</span>
+            <span className={cn('block text-[13px] leading-snug mt-0.5', tone.muted)}>{b.outcome}</span>
           </span>
         </li>
       ))}
@@ -106,7 +102,7 @@ const BenefitList: React.FC<{ plan: PlanDefinition; inheritsFrom?: string; headi
 );
 
 const SavingsTag: React.FC<{ savings: NonNullable<Savings> }> = ({ savings }) => (
-  <Pill tone="ok" icon="savings" className="py-1.5 leading-snug">
+  <Pill tone="ok" icon="savings" className="h-auto py-1.5 leading-snug whitespace-normal">
     Ahorrás {savings.coins.toLocaleString('es-AR')} coins ({savings.percent}%) vs. 3 meses de Gold
   </Pill>
 );
@@ -141,15 +137,14 @@ const PlanCard: React.FC<{
     <article
       aria-labelledby={headingId}
       className={cn(
-        'relative overflow-hidden rounded-[var(--radius-lg)] border flex flex-col gap-5 transition-shadow',
-        tone.surface,
-        featured
-          ? cn(
-              'order-first lg:order-none p-5 sm:p-6 border-2 shadow-elevation-md',
-              isGold ? 'border-amber-400/70 dark:border-amber-300/50' : 'border-[var(--coral-500)]/70',
-            )
-          : 'p-5 shadow-elevation-sm',
-        isCurrent && 'border-2 border-emerald-500/70 dark:border-emerald-400/50',
+        'relative overflow-hidden flex flex-col gap-5 p-5 transition-shadow',
+        tone.card,
+        featured &&
+          cn(
+            'order-first lg:order-none shadow-elevation-md',
+            isGold ? 'border-amber-400/70 dark:border-amber-300/50' : 'border-[var(--coral-500)]/70',
+          ),
+        isCurrent && 'border-emerald-500/70 dark:border-emerald-400/50',
         // En mobile, un plan inferior al tuyo no compite con tu plan ni con la recomendación.
         state === 'lower' && 'opacity-70 order-last lg:order-none',
       )}
@@ -158,67 +153,62 @@ const PlanCard: React.FC<{
         <div
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute -top-20 -right-20 w-56 h-56 rounded-full blur-3xl opacity-40',
-            isGold ? 'bg-amber-300/50' : 'bg-[var(--coral-300)]/50',
+            'pointer-events-none absolute -top-24 -right-16 w-64 h-64 rounded-full blur-3xl opacity-50',
+            isGold ? 'bg-amber-300/40' : 'bg-[var(--coral-500)]/30',
           )}
         />
       )}
 
-      <header className="relative flex items-start gap-3">
-        <div
-          className={cn(
-            'rounded-[var(--radius-md)] flex items-center justify-center shrink-0',
-            featured ? 'w-12 h-12' : 'w-10 h-10',
-            accentTile(plan.accent),
-          )}
-        >
-          <Icon name={plan.icon} filled className={featured ? 'text-[26px]' : 'text-[22px]'} />
+      <header className="relative flex items-start gap-3.5">
+        <div className={cn('w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center shrink-0', accentTile(plan.accent))}>
+          <Icon name={plan.icon} filled className="text-[26px]" />
         </div>
         <div className="min-w-0 flex-1">
           {featured && <span className="section-kicker block mb-1.5">Tu próximo paso</span>}
           <div className="flex items-center gap-2 flex-wrap">
             <h4
               id={headingId}
-              className={cn('italic font-semibold leading-tight', featured ? 'text-[24px]' : 'text-[20px]', tone.strong)}
+              className={cn('italic font-semibold leading-tight', featured ? 'text-[26px]' : 'text-[22px]', tone.strong)}
               style={{ fontFamily: 'var(--font-display)' }}
             >
               {item.name}
             </h4>
             {isCurrent && (
-              <Pill tone="ok" icon="check" className="px-2 py-0.5 text-[11px]">
+              <Pill tone="ok" icon="check" className="h-6 px-2 text-[11px]">
                 Tu plan
               </Pill>
             )}
           </div>
-          <p className={cn('text-[13px] mt-1 leading-snug', tone.muted)}>{plan.tagline}</p>
+          <p className={cn('text-[13.5px] mt-1 leading-snug', tone.muted)}>{plan.tagline}</p>
         </div>
       </header>
 
-      <div className="relative flex flex-col gap-2.5">
+      <div className={cn('relative flex flex-col gap-3 rounded-[var(--radius-md)] p-4', tone.sunken)}>
         <PriceBlock plan={plan} item={item} large={featured} />
-        <div className="flex flex-wrap gap-1.5">
-          {state === 'available' && balance !== null && <Affordability price={item.price} balance={balance} />}
-          {savings && plan.tier === 'FOUNDING' && <SavingsTag savings={savings} />}
-        </div>
+        {((state === 'available' && balance !== null) || (savings && plan.tier === 'FOUNDING')) && (
+          <div className="flex flex-wrap gap-1.5">
+            {state === 'available' && balance !== null && <Affordability price={item.price} balance={balance} />}
+            {savings && plan.tier === 'FOUNDING' && <SavingsTag savings={savings} />}
+          </div>
+        )}
       </div>
 
-      <div className={cn('relative pt-5 border-t', tone.divider)}>
+      <div className="relative">
         <BenefitList plan={plan} inheritsFrom={prev?.shortName} heading={benefitHeading} />
       </div>
 
-      <div className="relative mt-auto flex flex-col gap-2">
+      <div className="relative mt-auto flex flex-col gap-2.5">
         <Button
-          size={featured ? 'lg' : 'default'}
           variant={state === 'available' ? 'primary' : 'secondary'}
           disabled={state === 'lower' || state === 'lifetime'}
           onClick={() => onSelect(item, featured ? 'featured' : 'card')}
-          className={cn('w-full rounded-[var(--radius-pill)] gap-1.5', featured && 'h-12')}
+          className="w-full h-12 rounded-[var(--radius-pill)] gap-1.5 text-[15px]"
         >
           {ctaLabel(plan, state)}
           {state === 'available' && <Icon name="arrow_forward" className="text-[18px]" />}
         </Button>
         {featured && (
-          <p className={cn('text-[12px] text-center', tone.muted)}>
+          <p className={cn('text-[12.5px] text-center leading-snug', tone.muted)}>
             Se paga con coins. Vence a los {plan.durationDays} días y no se renueva solo.
           </p>
         )}
@@ -273,12 +263,12 @@ const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<Membe
       <div id="compare-title">
         <SectionTitle kicker="Sin letra chica" title="Compará los planes" />
       </div>
-      <div className={cn('rounded-[var(--radius-lg)] border overflow-x-auto', tone.surface)}>
+      <div className={cn('overflow-x-auto overflow-y-hidden', tone.card)}>
         <table className="w-full min-w-[300px] table-fixed border-collapse text-left">
           <caption className="sr-only">Beneficios incluidos en cada plan</caption>
           <thead>
             <tr>
-              <th scope="col" className={cn('sticky left-0 z-10 w-[30%] lg:w-[34%] px-2 py-3 sm:p-3 lg:px-5 text-[11px] font-semibold uppercase tracking-[0.1em]', tone.muted, tone.surface)}>
+              <th scope="col" className={cn('sticky left-0 z-10 w-[30%] lg:w-[34%] px-3 py-3.5 lg:px-5 text-[11px] font-bold uppercase tracking-[0.1em]', tone.faint, tone.surface)}>
                 Beneficio
               </th>
               {tiers.map((t) => (
@@ -286,7 +276,7 @@ const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<Membe
                   key={t}
                   scope="col"
                   className={cn(
-                    'px-1 py-3 sm:p-3 text-center text-[13px] font-bold',
+                    'px-1 py-3.5 sm:p-3 text-center text-[13.5px] font-bold',
                     t === currentTier ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300' : tone.strong,
                   )}
                 >
@@ -299,14 +289,14 @@ const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<Membe
           <tbody>
             {COMPARISON_ROWS.map((row) => (
               <tr key={row.label} className={cn('border-t', tone.divider)}>
-                <th scope="row" className={cn('sticky left-0 z-10 px-2.5 py-3 sm:p-3 lg:px-5 text-[12.5px] font-semibold leading-snug', tone.strong, tone.surface)}>
+                <th scope="row" className={cn('sticky left-0 z-10 px-3 py-3.5 lg:px-5 text-[13px] font-semibold leading-snug', tone.strong, tone.surface)}>
                   {row.label}
                 </th>
                 {tiers.map((t) => (
                   <td
                     key={t}
                     className={cn(
-                      'px-1 py-3 sm:p-3 text-center align-middle',
+                      'px-1 py-3.5 sm:p-3 text-center align-middle',
                       tone.strong,
                       t === currentTier && 'bg-emerald-50/60 dark:bg-emerald-400/5',
                     )}
@@ -321,7 +311,7 @@ const PlanComparison: React.FC<{ currentTier: MembershipTier; offered: Set<Membe
           </tbody>
         </table>
       </div>
-      <p className={cn('px-1 text-[12px] leading-relaxed', tone.muted)}>
+      <p className={cn('px-1 text-[12.5px] leading-relaxed', tone.faint)}>
         "Con coins" = podés comprarlo suelto en Poderes sin tener un plan. Ningún plan se renueva automáticamente.
       </p>
     </section>
@@ -339,8 +329,9 @@ export const PlansSection: React.FC<PlansSectionProps> = ({ items, currentTier, 
   return (
     <div className="flex flex-col gap-8">
       {currentTier === 'FOUNDING' && (
-        <p className={cn('rounded-[var(--radius-md)] p-4 text-[13px] leading-relaxed', tone.sunken, tone.strong)}>
-          Tenés el plan más completo de FINDY. Abajo ves todo lo que incluye y, si querés, podés renovarlo.
+        <p className={cn('flex items-start gap-3 rounded-[var(--radius-md)] border p-4 text-[13.5px] leading-relaxed', tone.sunken, tone.divider, tone.strong)}>
+          <Icon name="military_tech" filled className={cn('text-[22px] shrink-0', tone.gold)} />
+          Tenés el plan más completo de Findy. Abajo ves todo lo que incluye y, si querés, podés renovarlo.
         </p>
       )}
 

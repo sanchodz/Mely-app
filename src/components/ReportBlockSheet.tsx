@@ -85,39 +85,45 @@ export const ReportBlockSheet: React.FC<ReportBlockSheetProps> = ({
 
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) close(); else onOpenChange(true); }}>
-      <SheetContent side="bottom" className="rounded-t-3xl p-5">
+      <SheetContent side="bottom" className="rounded-t-3xl p-5 max-h-[90dvh] overflow-y-auto no-scrollbar" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
         {view === 'menu' && (
           <>
-            <SheetHeader className="text-left mb-1">
-              <SheetTitle>Reportar o bloquear</SheetTitle>
-              <p className={`text-[12.5px] ${mutedText}`}>Sobre {partnerName}. Esto queda entre vos y el equipo de FINDY.</p>
+            <SheetHeader className="text-left mb-1 space-y-1">
+              <SheetTitle className="text-[18px] font-bold">Reportar o bloquear</SheetTitle>
+              <p className={`text-[13.5px] leading-relaxed ${mutedText}`}>Sobre {partnerName}. Esto queda entre vos y el equipo de Findy.</p>
             </SheetHeader>
-            <div className="flex flex-col gap-2 mt-3">
+            <div className="flex flex-col gap-2 mt-4">
               <button
                 type="button"
                 onClick={() => { sounds.playClick(); setView('report'); }}
-                className={`w-full text-left px-4 py-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
-                  isLight ? 'bg-white border-[#ffe0ec] hover:bg-[#fcf9f2]' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                className={`w-full text-left px-4 py-3.5 min-h-[64px] rounded-2xl flex items-center gap-3.5 transition-colors ${
+                  isLight ? 'bg-[#fcf9f2] hover:bg-[#efe7d8]' : 'bg-white/6 hover:bg-white/10'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px] text-amber-500 shrink-0">flag</span>
-                <span>
-                  <span className={`block text-[13.5px] font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Reportar perfil</span>
-                  <span className={`block text-[11.5px] ${mutedText}`}>Contanos qué pasó, revisamos cada reporte</span>
+                <span className="w-10 h-10 rounded-full bg-amber-500/12 text-amber-500 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">flag</span>
                 </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-[15px] font-bold leading-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Reportar perfil</span>
+                  <span className={`block text-[12.5px] mt-0.5 ${mutedText}`}>Contanos qué pasó, revisamos cada reporte</span>
+                </span>
+                <span className={`material-symbols-outlined text-[20px] ${mutedText}`}>chevron_right</span>
               </button>
               <button
                 type="button"
                 onClick={() => { sounds.playClick(); setView('block-confirm'); }}
-                className={`w-full text-left px-4 py-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
-                  isLight ? 'bg-white border-[#ffe0ec] hover:bg-[#fcf9f2]' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                className={`w-full text-left px-4 py-3.5 min-h-[64px] rounded-2xl flex items-center gap-3.5 transition-colors ${
+                  isLight ? 'bg-[#fcf9f2] hover:bg-[#efe7d8]' : 'bg-white/6 hover:bg-white/10'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px] text-red-500 shrink-0">block</span>
-                <span>
-                  <span className={`block text-[13.5px] font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Bloquear a {partnerName}</span>
-                  <span className={`block text-[11.5px] ${mutedText}`}>No van a poder verse ni contactarse más</span>
+                <span className="w-10 h-10 rounded-full bg-red-500/12 text-red-500 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">block</span>
                 </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-[15px] font-bold leading-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Bloquear a {partnerName}</span>
+                  <span className={`block text-[12.5px] mt-0.5 ${mutedText}`}>No van a poder verse ni contactarse más</span>
+                </span>
+                <span className={`material-symbols-outlined text-[20px] ${mutedText}`}>chevron_right</span>
               </button>
             </div>
           </>
@@ -125,32 +131,32 @@ export const ReportBlockSheet: React.FC<ReportBlockSheetProps> = ({
 
         {view === 'report' && (
           <>
-            <SheetHeader className="text-left mb-1">
+            <SheetHeader className="text-left mb-1 space-y-1">
               <button
                 type="button"
                 onClick={() => setView('menu')}
-                className={`inline-flex items-center gap-1 text-[11.5px] font-bold mb-1 ${isLight ? 'text-[#ec4d86]' : 'text-[#ffa3c4]'}`}
+                className={`inline-flex items-center gap-1 h-9 -ml-1 pr-2 text-[13px] font-bold ${isLight ? 'text-[#ec4d86]' : 'text-[#ffa3c4]'}`}
               >
-                <span className="material-symbols-outlined text-[15px]">arrow_back</span>
+                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
                 Volver
               </button>
-              <SheetTitle>¿Por qué reportás a {partnerName}?</SheetTitle>
+              <SheetTitle className="text-[18px] font-bold leading-tight">¿Por qué reportás a {partnerName}?</SheetTitle>
             </SheetHeader>
             <RadioGroup
               value={reason ?? undefined}
               onValueChange={(v) => setReason(v as ReportReason)}
-              className="mt-2 gap-2.5"
+              className="mt-3 gap-2"
             >
               {REPORT_REASONS.map((r) => (
                 <Label
                   key={r.value}
                   htmlFor={`report-${r.value}`}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border cursor-pointer text-[13px] font-medium ${
+                  className={`flex items-center gap-3 px-4 min-h-[48px] py-2.5 rounded-2xl border cursor-pointer text-[14px] font-medium leading-snug transition-colors ${
                     reason === r.value
                       ? 'border-[#ec4d86] bg-[#ec4d86]/8'
                       : isLight
-                      ? 'border-[#ffe0ec] bg-white'
-                      : 'border-white/10 bg-white/5'
+                      ? 'border-transparent bg-[#fcf9f2]'
+                      : 'border-transparent bg-white/6'
                   }`}
                 >
                   <RadioGroupItem value={r.value} id={`report-${r.value}`} />
@@ -162,7 +168,7 @@ export const ReportBlockSheet: React.FC<ReportBlockSheetProps> = ({
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               placeholder="Contanos más detalles (opcional)"
-              className="mt-3 min-h-[70px]"
+              className="mt-3 min-h-[80px] rounded-2xl text-[14px]"
               maxLength={500}
             />
             <Button
@@ -170,7 +176,7 @@ export const ReportBlockSheet: React.FC<ReportBlockSheetProps> = ({
               variant="destructive"
               disabled={!reason || reportUser.isPending}
               onClick={handleReport}
-              className="w-full mt-4"
+              className="w-full mt-4 h-12 rounded-2xl text-[14px] font-bold"
             >
               {reportUser.isPending ? 'Enviando…' : 'Enviar reporte'}
             </Button>
@@ -179,17 +185,20 @@ export const ReportBlockSheet: React.FC<ReportBlockSheetProps> = ({
 
         {view === 'block-confirm' && (
           <>
-            <SheetHeader className="text-left mb-1">
-              <SheetTitle className="text-red-500">Bloquear a {partnerName}</SheetTitle>
-              <p className={`text-[12.5px] ${mutedText}`}>
+            <SheetHeader className="text-left mb-1 space-y-1">
+              <span className="w-12 h-12 rounded-full bg-red-500/12 text-red-500 flex items-center justify-center mb-1">
+                <span className="material-symbols-outlined text-[26px]">block</span>
+              </span>
+              <SheetTitle className="text-[18px] font-bold leading-tight">Bloquear a {partnerName}</SheetTitle>
+              <p className={`text-[13.5px] leading-relaxed ${mutedText}`}>
                 Ya no va a poder ver tu perfil, escribirte ni volver a aparecer en tu Descubrir. No se le avisa que la bloqueaste.
               </p>
             </SheetHeader>
-            <div className="flex gap-2.5 mt-4">
-              <Button type="button" variant="tertiary" onClick={() => setView('menu')} className="flex-1">
+            <div className="flex gap-2.5 mt-5">
+              <Button type="button" variant="tertiary" onClick={() => setView('menu')} className="flex-1 h-12 rounded-2xl text-[14px] font-bold">
                 Cancelar
               </Button>
-              <Button type="button" variant="destructive" onClick={handleBlock} disabled={blockUser.isPending} className="flex-1">
+              <Button type="button" variant="destructive" onClick={handleBlock} disabled={blockUser.isPending} className="flex-1 h-12 rounded-2xl text-[14px] font-bold">
                 {blockUser.isPending ? 'Bloqueando…' : 'Bloquear'}
               </Button>
             </div>

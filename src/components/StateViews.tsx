@@ -38,6 +38,16 @@ const StateShell: React.FC<StateBaseProps & { label: string }> = ({
 }) => {
   const { isLight } = useTheme();
   const amber = accent === 'amber';
+  // Círculo: anillo dashed fino sobre un disco tintado (antes el dashed grueso
+  // competía con el icono). El tinte sigue el acento.
+  const tint = amber
+    ? isLight
+      ? 'rgba(200,154,62,0.12)'
+      : 'rgba(217,180,92,0.14)'
+    : isLight
+      ? 'rgba(255,107,158,0.12)'
+      : 'rgba(255,107,158,0.14)';
+  const ring = amber ? 'rgba(200,154,62,0.45)' : 'rgba(255,107,158,0.5)';
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -48,26 +58,26 @@ const StateShell: React.FC<StateBaseProps & { label: string }> = ({
       className={`flex flex-col items-center text-center ${compact ? 'py-8 px-4 gap-2' : 'py-14 px-6 gap-3'}`}
     >
       <div
-        className={`rounded-full border-2 border-dashed flex items-center justify-center ${
-          compact ? 'w-14 h-14' : 'w-20 h-20'
-        } ${amber ? 'text-amber-500' : 'text-[#ec4d86]'} ${
-          isLight ? 'bg-white shadow-elevation-sm' : 'bg-[#0f1a2e]'
+        className={`relative rounded-full flex items-center justify-center ${compact ? 'w-16 h-16 mb-0.5' : 'w-[88px] h-[88px] mb-1'} ${
+          amber ? 'text-amber-500' : 'text-[#ec4d86]'
         }`}
+        style={{ background: tint }}
       >
-        <span className={`material-symbols-outlined ${compact ? 'text-[26px]' : 'text-[36px]'}`} aria-hidden="true">
+        <span className="absolute inset-0 rounded-full border-[1.5px] border-dashed" style={{ borderColor: ring }} aria-hidden="true" />
+        <span className={`material-symbols-outlined ${compact ? 'text-[28px]' : 'text-[38px]'}`} aria-hidden="true">
           {icon}
         </span>
       </div>
-      <h3 className={`${compact ? 'text-[15px]' : 'text-[18px]'} font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+      <h3 className={`${compact ? 'text-[16px]' : 'text-[19px]'} font-extrabold tracking-[-0.015em] leading-tight text-ink`}>
         {title}
       </h3>
       {body && (
-        <p className={`leading-relaxed ${compact ? 'text-[12px] max-w-[240px]' : 'text-[13px] max-w-[260px]'} ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+        <p className={`leading-relaxed text-ink-muted ${compact ? 'text-[13px] max-w-[260px]' : 'text-[14px] max-w-[290px]'}`}>
           {body}
         </p>
       )}
       {actions.length > 0 && (
-        <div className={`flex items-center justify-center gap-2.5 flex-wrap ${compact ? 'mt-1' : 'mt-2'}`}>
+        <div className={`flex items-center justify-center gap-2.5 flex-wrap ${compact ? 'mt-2' : 'mt-3'}`}>
           {actions.map((a) =>
             a.variant === 'link' ? (
               <button
@@ -77,7 +87,7 @@ const StateShell: React.FC<StateBaseProps & { label: string }> = ({
                   sounds.playClick();
                   a.onClick();
                 }}
-                className={`text-[12px] font-bold underline underline-offset-4 ${isLight ? 'text-[#ec4d86]' : 'text-[#ffa3c4]'}`}
+                className="text-link text-[13px] min-h-[40px] px-2 inline-flex items-center underline underline-offset-4"
               >
                 {a.label}
               </button>
@@ -85,14 +95,14 @@ const StateShell: React.FC<StateBaseProps & { label: string }> = ({
               <Button
                 key={a.label}
                 variant={a.variant === 'secondary' ? 'secondary' : 'primary'}
-                size="sm"
+                size={compact ? 'sm' : 'default'}
                 onClick={() => {
                   sounds.playClick();
                   a.onClick();
                 }}
-                className="rounded-full gap-1.5"
+                className="gap-1.5 px-5"
               >
-                {a.icon && <span className="material-symbols-outlined text-[15px]">{a.icon}</span>}
+                {a.icon && <span className="material-symbols-outlined text-[17px]">{a.icon}</span>}
                 {a.label}
               </Button>
             ),

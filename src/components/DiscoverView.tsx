@@ -59,6 +59,14 @@ interface DiscoverViewProps {
 
 type StampKind = 'like' | 'pass' | 'star';
 
+// Altura de la foto = viewport − barra superior (5rem) − bottom nav (5.5rem)
+// − cabecera + gap (3.5rem) − fila de acciones (5.75rem) − borde/holgura
+// (0.5rem) = 20.25rem. Clamp: nunca menos de 300px (legible) ni más de 560px
+// (tablets). Así foto + Pasar/Me gusta/Super Spark entran en la primera
+// pantalla sin scroll, incluso en 360×640.
+const PHOTO_HEIGHT =
+  'clamp(300px, calc(100dvh - 20.25rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 560px)';
+
 // Sello de decisión con el lenguaje que Findy ya tenía (mismos colores y
 // formas): se usa tanto en vivo durante el drag como fijo en la carta que
 // sale volando. Extraído para no duplicar el marcado 4 veces.
@@ -313,17 +321,24 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
   if (isLoading && deck.length === 0) {
     return (
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-8 w-40" />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-44" />
+          <Skeleton className="h-11 w-11 rounded-full" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-28 rounded-full" />
+          <Skeleton className="h-9 w-32 rounded-full" />
+          <Skeleton className="h-9 w-24 rounded-full" />
+        </div>
         <div className="w-full min-h-[min(560px,68dvh)] rounded-[var(--radius-lg)] overflow-hidden flex flex-col gap-3 p-0">
-          <Skeleton className="h-[380px] w-full rounded-none" />
-          <div className="p-5 flex flex-col gap-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <div className="flex gap-1.5">
-              <Skeleton className="h-6 w-16 rounded-full" />
-              <Skeleton className="h-6 w-20 rounded-full" />
-              <Skeleton className="h-6 w-14 rounded-full" />
+          <Skeleton className="w-full rounded-none" style={{ height: PHOTO_HEIGHT }} />
+          <div className="p-4 flex flex-col gap-3">
+            <Skeleton className="h-14 w-full rounded-[var(--radius-md)]" />
+            <div className="flex items-center justify-center gap-5 pt-2">
+              <Skeleton className="h-[54px] w-[54px] rounded-full" />
+              <Skeleton className="h-[68px] w-[68px] rounded-full" />
+              <Skeleton className="h-[54px] w-[54px] rounded-full" />
             </div>
           </div>
         </div>
@@ -466,36 +481,41 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-8 select-none">
-      <div className="flex items-end justify-between gap-3 px-1">
+    <div className="flex flex-col gap-3 pb-8 select-none">
+      {/* Cabecera de una sola fila y 44px: la foto y los botones de acción
+          tienen que entrar en la primera pantalla sin scrollear, también en
+          teléfonos de 640px de alto. Intención, ánimo y Persona del día viven
+          debajo de la carta. */}
+      <div className="flex items-center justify-between gap-3 px-0.5 h-11">
         <div className="min-w-0">
-          <p className="section-kicker">Descubrir</p>
-          <h2 className={`discover-header-title mt-1 text-[22px] font-bold tracking-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-            Una conexión a la vez
-          </h2>
-          <p className={`mt-1 max-w-[250px] text-[12px] leading-relaxed ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
-            Conocé la historia antes de decidir si hay chispa.
-          </p>
-          {quota && (
-            <div
-              className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                quotaExhausted
-                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300'
-                  : isLight
-                  ? 'bg-[#efe7d8] text-[#5b6478]'
-                  : 'bg-white/8 text-[#a9b2c9]'
-              }`}
-              title={`Se renueva ${new Date(quota.resetsAt).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}`}
-            >
-              <span className="material-symbols-outlined text-[13px]">bolt</span>
-              {quotaExhausted
-                ? 'Por hoy está bien'
-                : `${quota.remaining} ${quota.remaining === 1 ? 'historia' : 'historias'} hoy`}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <p className={`text-[17px] font-extrabold tracking-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Descubrir</p>
+            {quota && (
+              <span
+                className={`inline-flex items-center gap-0.5 h-5 rounded-full pl-1 pr-2 text-[10.5px] font-extrabold ${
+                  quotaExhausted
+                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300'
+                    : isLight
+                    ? 'bg-[#efe7d8] text-[#16223b]'
+                    : 'bg-white/8 text-[#f5f1e8]'
+                }`}
+                title={`Se renueva ${new Date(quota.resetsAt).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })}`}
+                aria-label={
+                  quotaExhausted
+                    ? 'Cupo de hoy agotado'
+                    : `${quota.remaining} ${quota.remaining === 1 ? 'historia' : 'historias'} disponibles hoy`
+                }
+              >
+                <span className="material-symbols-outlined text-[13px] text-[#ec4d86]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  bolt
+                </span>
+                {quotaExhausted ? 'Agotado' : `${quota.remaining} hoy`}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Rincones & Beneficios, Modo Cita a Ciegas y Filtros son funcionalidad real que
               antes vivía como 3 íconos sueltos compitiendo con la card — el mockup aprobado
               (Discover.dc.html) solo deja un ícono de ajustes en la cabecera. Se mantiene todo,
@@ -506,15 +526,19 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               <button
                 type="button"
                 onClick={() => sounds.playClick()}
-                className={`tap-target relative w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
-                  isLight ? 'bg-[#efe7d8] text-[#16223b] hover:bg-[#efe7d8]' : 'bg-white/8 text-[#f5f1e8] hover:bg-white/14'
+                className={`tap-target relative w-11 h-11 rounded-full flex items-center justify-center transition-colors active:scale-95 ${
+                  isLight ? 'bg-[#efe7d8] text-[#16223b]' : 'bg-white/8 text-[#f5f1e8] hover:bg-white/14'
                 }`}
                 title="Más opciones de Descubrir"
                 aria-label="Más opciones de Descubrir"
               >
-                <span className="material-symbols-outlined text-[16px]">tune</span>
+                <span className="material-symbols-outlined text-[20px]">tune</span>
                 {(isBlindMode || activeFiltersCount > 0) && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#ec4d86] border-2 border-[var(--midnight-900)]" />
+                  <span
+                    className={`absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-[#ec4d86] border-2 ${
+                      isLight ? 'border-[#f7f2e9]' : 'border-[var(--midnight-950)]'
+                    }`}
+                  />
                 )}
               </button>
             </DropdownMenuTrigger>
@@ -581,156 +605,9 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         </div>
       </div>
 
-      {/* Pilar 1: la intención manda. Ritual semanal en un tap — declara qué
-          querés esta semana y el descubrimiento se ordena alrededor de eso. */}
-      {onSelectIntention && (
-        <div>
-          <div
-            className="chip-row-compact flex gap-1.5 overflow-x-auto no-scrollbar px-1 -mx-1 py-0.5"
-            role="group"
-            aria-label="Intención de la semana"
-          >
-            {INTENTIONS.map((item) => {
-              const active = intentionId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    sounds.playClick();
-                    onSelectIntention(active ? null : item.id);
-                  }}
-                  aria-pressed={active}
-                  title={item.blurb}
-                  className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border-[1.5px] text-[12px] font-bold whitespace-nowrap transition-all active:scale-95 ${
-                    active
-                      ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] border-transparent text-white shadow-elevation-md'
-                      : isLight
-                        ? 'bg-white border-[rgba(22,34,59,0.14)] text-[#5b6478]'
-                        : 'bg-white/5 border-white/10 text-[#a9b2c9]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">{item.icon}</span>
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={intentionId ?? 'none'}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className={`mt-1.5 px-1 text-[11px] leading-snug ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}
-              aria-live="polite"
-            >
-              {intention
-                ? `Tu intención: ${intention.label.toLowerCase()} — ${intention.blurb}. Queda guardada hasta que la cambies.`
-                : '¿Qué querés estos días? Elegí una intención y te mostramos personas en esa sintonía.'}
-            </motion.p>
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* Ritual diario: el pulso de hoy en un tap. Expira solo a la medianoche y
-          solo suma una señal explicada a la afinidad — jamás filtra ni oculta. */}
-      {onSelectDailyMood && (
-        <div>
-          <div
-            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-1 -mx-1 py-0.5"
-            role="group"
-            aria-label="Ánimo de hoy"
-          >
-            <span
-              className={`shrink-0 text-[10px] font-bold tracking-wider ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}
-              aria-hidden="true"
-            >
-              HOY
-            </span>
-            {DAILY_MOODS.map((mood) => {
-              const active = dailyMoodId === mood.id;
-              return (
-                <button
-                  key={mood.id}
-                  type="button"
-                  onClick={() => {
-                    sounds.playClick();
-                    onSelectDailyMood(active ? null : mood.id);
-                  }}
-                  aria-pressed={active}
-                  title={mood.blurb}
-                  className={`shrink-0 inline-flex items-center gap-1 h-8 px-3 rounded-full border text-[11px] font-bold whitespace-nowrap transition-all active:scale-95 ${
-                    active
-                      ? 'bg-[#ec4d86] border-transparent text-white shadow-elevation-sm'
-                      : isLight
-                        ? 'bg-transparent border-[rgba(22,34,59,0.14)] text-[#5b6478]'
-                        : 'bg-transparent border-white/10 text-[#a9b2c9]'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[14px]">{mood.icon}</span>
-                  {mood.label}
-                </button>
-              );
-            })}
-          </div>
-          {dailyMoodId && (
-            <p className={`mt-1 px-1 text-[11px] leading-snug ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`} aria-live="polite">
-              Hoy estás para {getDailyMood(dailyMoodId)?.label.toLowerCase()} — la afinidad lo tiene en cuenta. Se reinicia a la medianoche.
-            </p>
-          )}
-        </div>
-      )}
-
-      <LocationPrompt />
-
-      {showPersonOfDayBanner && personOfTheDay && (
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={handleOpenPersonOfDay}
-          className={`flex items-center gap-3 rounded-[var(--radius-md)] border p-2.5 text-left tactile-btn shadow-elevation-sm ${
-            isLight ? 'bg-white border-[#ffe0ec]' : 'bg-[#0f1a2e] border-[#ec4d86]/25'
-          }`}
-        >
-          <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#0a1120] flex items-center justify-center">
-            {personOfTheDay.photos[0]?.url ? (
-              <img
-                src={personOfTheDay.photos[0]?.url}
-                alt={personOfTheDay.displayName}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span className="material-symbols-outlined text-[24px] text-white/40" aria-hidden="true">person</span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="font-label-caps text-[9.5px] uppercase font-bold tracking-wider text-[#ec4d86] flex items-center gap-1">
-              <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                auto_awesome
-              </span>
-              Persona del día
-            </span>
-            <p className={`text-[13.5px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-              {personOfTheDay.displayName}, {personOfTheDay.age}
-            </p>
-            <p className={`text-[11.5px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
-              Elegida a mano para vos — dale un vistazo antes que el resto.
-            </p>
-          </div>
-          <span className={`material-symbols-outlined text-[18px] shrink-0 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
-            chevron_right
-          </span>
-        </motion.button>
-      )}
-
-      {/* Card Deck Container — en teléfonos chicos la altura se adapta al viewport. */}
-      <div className="relative w-full min-h-[min(560px,68dvh)]">
+      {/* Card Deck Container — la foto mide lo que sobra del viewport (ver
+          PHOTO_HEIGHT), así foto + acciones siempre entran sin scroll. */}
+      <div className="relative w-full">
         {/* Next Card in Background (Smooth Depth Stack) */}
         {nextProfile && (
           <div
@@ -743,7 +620,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               zIndex: 1,
             }}
           >
-            <div className="relative h-[300px] min-[380px]:h-[360px] w-full bg-[#0a1120] overflow-hidden">
+            <div className="relative w-full bg-[#0a1120] overflow-hidden" style={{ height: PHOTO_HEIGHT }}>
               {nextProfile.photos[0]?.url && (
                 <img
                   src={nextProfile.photos[0]?.url}
@@ -818,7 +695,8 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 onDragStart={handleDragStart}
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
-                className="relative h-[min(380px,42dvh)] w-full bg-[#0a1120] overflow-hidden group touch-none cursor-grab active:cursor-grabbing"
+                style={{ height: PHOTO_HEIGHT }}
+                className="relative w-full bg-[#0a1120] overflow-hidden group touch-none cursor-grab active:cursor-grabbing"
               >
                 {mainPhotoUrl ? (
                   <motion.img
@@ -870,9 +748,9 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                         sounds.playSpark();
                         setUnblurredCards((prev) => ({ ...prev, [currentProfile.id]: true }));
                       }}
-                      className="mt-3 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-label-caps text-[9px] uppercase font-bold tracking-wider shadow-elevation-md hover:scale-105 transition-transform flex items-center gap-1.5"
+                      className="mt-4 px-5 h-11 rounded-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white text-[13px] font-bold shadow-elevation-md active:scale-95 transition-transform flex items-center gap-2"
                     >
-                      <span className="material-symbols-outlined text-[13px]">sparkles</span>
+                      <span className="material-symbols-outlined text-[16px]">sparkles</span>
                       Revelar Mirada
                     </button>
                   </div>
@@ -938,12 +816,12 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 <div className="absolute bottom-4 left-5 right-5 z-20 flex justify-between items-end">
                   <div className="min-w-0 flex-1 pr-2">
                     {/* Intención primero: qué busca, antes que la foto decida por vos. */}
-                    <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-black/55 border border-white/25 px-2.5 py-1 text-[10.5px] font-bold text-white backdrop-blur-xs">
-                      <span className="material-symbols-outlined text-[12px] text-[#ff6b9e]">explore</span>
+                    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-black/45 border border-white/20 pl-2 pr-2.5 h-7 text-[11px] font-bold text-white backdrop-blur-xs">
+                      <span className="material-symbols-outlined text-[14px] text-[#ff6b9e]">explore</span>
                       Busca: {currentProfile.lookingForLabel}
                     </span>
                     <div className="flex items-center gap-2">
-                      <h2 className="font-headline-md text-[27px] font-extrabold text-white tracking-tight drop-shadow-xs truncate">
+                      <h2 className="font-headline-md text-[28px] leading-none font-extrabold text-white tracking-tight drop-shadow-xs truncate">
                         {currentProfile.displayName}, {currentProfile.age}
                       </h2>
                       {currentProfile.badges.trusted && (
@@ -973,14 +851,13 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                         {[currentProfile.city, currentProfile.distance].filter(Boolean).join(' • ')}
                       </p>
                     )}
-                    {/* Capítulo 1 cierra con el motivo humano (no con la bio
-                        truncada, que vive completa en el cuaderno): en 1 segundo
-                        entendés por qué apareció esta persona. */}
-                    {primaryReason && (
+                    {/* El motivo humano vive una sola vez, en el bloque de
+                        afinidad de abajo (con su sello): repetirlo sobre la
+                        foto era ruido. Si no hay afinidad calculada, se muestra
+                        acá como cierre del capítulo 1. */}
+                    {primaryReason && !affinity && (
                       <p className="text-[13.5px] font-semibold text-white mt-1.5 truncate flex items-center gap-1.5 drop-shadow-xs">
-                        <span className="material-symbols-outlined text-[14px] text-[#ff6b9e] shrink-0">
-                          {affinity?.signals[0]?.icon ?? 'location_on'}
-                        </span>
+                        <span className="material-symbols-outlined text-[14px] text-[#ff6b9e] shrink-0">location_on</span>
                         <span className="truncate">{primaryReason}</span>
                       </p>
                     )}
@@ -995,7 +872,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                         sounds.playClick();
                         setShowFullNotebook(!showFullNotebook);
                       }}
-                      className="relative p-2.5 bg-black/60 text-white hover:bg-black/80 rounded-full border border-white/30 backdrop-blur-xs shadow-elevation-md transition-colors"
+                      className="relative w-11 h-11 flex items-center justify-center bg-black/55 text-white hover:bg-black/75 rounded-full border border-white/25 backdrop-blur-xs shadow-elevation-md transition-colors"
                       title={`Abrir cuaderno: ${currentProfile.prompts.length} respuestas${currentProfile.audioBio ? ' + audio' : ''}`}
                       aria-label={`Abrir cuaderno de ${currentProfile.displayName}: ${currentProfile.prompts.length} respuestas${currentProfile.audioBio ? ' y audio' : ''}`}
                     >
@@ -1018,113 +895,208 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 </div>
               </motion.div>
 
+              {/* Action row: pasar / me gusta / destacar, con deshacer discreto. */}
+              <div className="px-3 min-[380px]:px-4 pt-3 pb-3 flex items-center justify-center gap-2.5 min-[380px]:gap-5 [&>*]:shrink-0">
+                <motion.button
+                  whileHover={{ scale: currentIndex > 0 ? 1.08 : 1 }}
+                  whileTap={{ scale: currentIndex > 0 ? 0.92 : 1 }}
+                  id="btn-discover-rewind"
+                  onClick={() => {
+                    if (leaving || currentIndex === 0) return;
+                    sounds.playClick();
+                    setCurrentIndex((prev) => prev - 1);
+                  }}
+                  disabled={currentIndex === 0 || leaving !== null}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                    currentIndex === 0
+                      ? 'opacity-30 cursor-not-allowed text-slate-400 dark:text-white/30'
+                      : isLight
+                      ? 'text-[#5b6478] hover:text-[#ec4d86]'
+                      : 'text-white/50 hover:text-[#ffa3c4]'
+                  }`}
+                  title="Deshacer"
+                  aria-label="Deshacer perfil"
+                >
+                  <span className="material-symbols-outlined text-[22px]">replay</span>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.9 }}
+                  id="btn-discover-pass"
+                  onClick={() => triggerAction('passed')}
+                  className={`w-[54px] h-[54px] rounded-full flex items-center justify-center border transition-colors ${
+                    isLight
+                      ? 'bg-white border-[rgba(22,34,59,0.1)] text-[#16223b] shadow-elevation-sm'
+                      : 'bg-white/6 border-white/10 text-[#f5f1e8]'
+                  }`}
+                  title="Pasar"
+                  aria-label="Pasar perfil"
+                >
+                  <span className="material-symbols-outlined text-[26px]">close</span>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.88 }}
+                  id="btn-discover-stamp-like"
+                  onClick={() => triggerAction('liked')}
+                  className="w-[68px] h-[68px] rounded-full bg-gradient-to-br from-[#ec4d86] to-[#ff6b9e] text-white flex items-center justify-center shadow-[0_12px_28px_-8px_rgba(236,77,134,0.7)] ring-4 ring-[#ec4d86]/15 transition-all"
+                  title="Me gusta"
+                  aria-label="Me gusta y conectar"
+                >
+                  <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    favorite
+                  </span>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.9 }}
+                  id="btn-discover-superlike"
+                  onClick={() => triggerAction('starred')}
+                  className={`w-[54px] h-[54px] rounded-full flex items-center justify-center border transition-colors ${
+                    isLight
+                      ? 'bg-white border-[rgba(22,34,59,0.1)] text-[#6fa8c9] shadow-elevation-sm'
+                      : 'bg-white/6 border-white/10 text-[#6fa8c9]'
+                  }`}
+                  title="Super Spark: le llega tu perfil destacado"
+                  aria-label="Super Spark"
+                >
+                  <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    star
+                  </span>
+                </motion.button>
+
+                {/* Espejo del deshacer para que el trío quede centrado. */}
+                <span className="w-11 h-11 shrink-0" aria-hidden="true" />
+              </div>
+
               {/* Capítulo 2 — por qué esta persona: razones humanas primero, el %
                   como sello que las respalda (nunca "Compatibilidad: 87%"). Vive
                   DENTRO de la tarjeta para que todo salga junto con ella: un
                   mismo espacio, no bloques sueltos compitiendo. */}
-              {affinity && (
-                <motion.div
-                  key={`affinity-${currentProfile.id}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                  className={`mx-4 mt-3 flex items-center gap-2.5 rounded-[var(--radius-md)] border px-3 py-2.5 ${
-                    isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120] border-[#ec4d86]/20'
+              {/* Los tres capítulos (afinidad, plan, fragmento) viven en UNA
+                  superficie con divisores finos en vez de tres cajitas con
+                  borde: misma información, un tercio del ruido visual. */}
+              {(affinity || (planSuggestion && onOpenVerifiedSpots) || storyPeek) && (
+                <div
+                  className={`mx-4 mt-3 rounded-[var(--radius-md)] border overflow-hidden divide-y ${
+                    isLight
+                      ? 'bg-[#fcf9f2] border-[#ffe0ec] divide-[#ffe0ec]'
+                      : 'bg-[#0a1120]/70 border-white/8 divide-white/8'
                   }`}
-                  aria-live="polite"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-[12px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-                      {primaryReason ?? 'Seleccionada para vos hoy'}
-                    </p>
-                    {affinity.signals.length > 1 && (
-                      <p className={`text-[11px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
-                        {affinity.signals
-                          .slice(1)
-                          .map((s) => s.label)
-                          .join(' · ')}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className="shrink-0 rounded-full bg-gradient-to-br from-[#ec4d86] to-[#ff6b9e] text-white text-[12px] font-extrabold px-2 py-0.5 font-mono"
-                    title="Afinidad estimada con tus datos"
-                  >
-                    {affinity.score}
-                  </span>
-                </motion.div>
-              )}
+                  {affinity && (
+                    <motion.div
+                      key={`affinity-${currentProfile.id}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                      className="flex items-center gap-3 px-3.5 py-3"
+                      aria-live="polite"
+                    >
+                      <span
+                        className="shrink-0 w-11 h-11 rounded-full bg-gradient-to-br from-[#ec4d86] to-[#ff6b9e] text-white flex flex-col items-center justify-center leading-none shadow-[0_6px_16px_-6px_rgba(236,77,134,0.6)]"
+                        title="Afinidad estimada con tus datos"
+                        aria-label={`Afinidad ${affinity.score}`}
+                      >
+                        <span className="text-[15px] font-extrabold font-mono">{affinity.score}</span>
+                        <span className="text-[8px] font-bold uppercase tracking-wider opacity-90">afín</span>
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-[13px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+                          {primaryReason ?? 'Seleccionada para vos hoy'}
+                        </p>
+                        {affinity.signals.length > 1 && (
+                          <p className={`text-[11.5px] truncate mt-0.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+                            {affinity.signals
+                              .slice(1)
+                              .map((s) => s.label)
+                              .join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
 
-              {/* Capítulo 3 — qué podrían hacer: hipótesis concreta de primera
-                  cita con rincón real. Si no hay match honesto, no existe. */}
-              {planSuggestion && onOpenVerifiedSpots && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClick();
-                    onOpenVerifiedSpots();
-                  }}
-                  className={`mx-4 mt-2 flex items-center gap-2 rounded-[var(--radius-md)] border px-2.5 py-2 text-left transition-colors active:scale-[0.99] ${
-                    isLight ? 'bg-white border-[#ffe0ec] hover:bg-[#fcf9f2]' : 'bg-[#131f36] border-[#ec4d86]/20 hover:bg-white/5'
-                  }`}
-                  title={`Ver ${planSuggestion.spot.name}`}
-                >
-                  <span className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-[#ec4d86]/25">
-                    <img
-                      src={planSuggestion.spot.image}
-                      alt=""
-                      aria-hidden="true"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className={`block text-[12px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-                      Podrían ir a {planSuggestion.spot.name}
-                    </span>
-                    <span className={`block text-[11px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
-                      {planSuggestion.spot.neighborhood} · {planSuggestion.reason}
-                    </span>
-                  </span>
-                  <span className={`material-symbols-outlined text-[16px] shrink-0 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
-                    chevron_right
-                  </span>
-                </button>
-              )}
+                  {/* Capítulo 3 — qué podrían hacer: hipótesis concreta de primera
+                      cita con rincón real. Si no hay match honesto, no existe. */}
+                  {planSuggestion && onOpenVerifiedSpots && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClick();
+                        onOpenVerifiedSpots();
+                      }}
+                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 min-h-[56px] text-left transition-colors ${
+                        isLight ? 'hover:bg-white active:bg-white' : 'hover:bg-white/5 active:bg-white/5'
+                      }`}
+                      title={`Ver ${planSuggestion.spot.name}`}
+                    >
+                      <span className="relative w-11 h-11 rounded-full overflow-hidden shrink-0 ring-1 ring-[#ec4d86]/25">
+                        <img
+                          src={planSuggestion.spot.image}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-[13px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+                          Podrían ir a {planSuggestion.spot.name}
+                        </span>
+                        <span className={`block text-[11.5px] truncate mt-0.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+                          {planSuggestion.spot.neighborhood} · {planSuggestion.reason}
+                        </span>
+                      </span>
+                      <span className={`material-symbols-outlined text-[20px] shrink-0 ${isLight ? 'text-[#5b6478]' : 'text-[#6e7891]'}`}>
+                        chevron_right
+                      </span>
+                    </button>
+                  )}
 
-              {/* Nivel 3 — un fragmento sin abrir el cuaderno: la pregunta (no la
-                  respuesta), la voz (no el audio). Tocar abre la profundidad.
-                  El motivo sigue siendo la única entrada; esto es la promesa. */}
-              {storyPeek && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    sounds.playClick();
-                    setShowFullNotebook(true);
-                  }}
-                  className={`mx-4 mt-2 flex items-center gap-2.5 rounded-[var(--radius-md)] border px-3 py-2 text-left transition-colors active:scale-[0.99] ${
-                    isLight ? 'bg-white border-[#ffe0ec] hover:bg-[#fcf9f2]' : 'bg-[#0a1120] border-[#ec4d86]/20 hover:bg-white/5'
-                  }`}
-                  title="Abrir el cuaderno"
-                  aria-label={`${storyPeek.text}. ${storyPeek.hint}`}
-                >
-                  <span className="material-symbols-outlined text-[18px] text-[#ec4d86] shrink-0" aria-hidden="true">
-                    {storyPeek.icon}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className={`block text-[12px] italic truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
-                      {storyPeek.text}
-                    </span>
-                    <span className={`block text-[11px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
-                      {storyPeek.hint}
-                    </span>
-                  </span>
-                  <span className={`material-symbols-outlined text-[16px] shrink-0 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`} aria-hidden="true">
-                    chevron_right
-                  </span>
-                </button>
+                  {/* Nivel 3 — un fragmento sin abrir el cuaderno: la pregunta (no la
+                      respuesta), la voz (no el audio). Tocar abre la profundidad.
+                      El motivo sigue siendo la única entrada; esto es la promesa. */}
+                  {storyPeek && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sounds.playClick();
+                        setShowFullNotebook(true);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 min-h-[56px] text-left transition-colors ${
+                        isLight ? 'hover:bg-white active:bg-white' : 'hover:bg-white/5 active:bg-white/5'
+                      }`}
+                      title="Abrir el cuaderno"
+                      aria-label={`${storyPeek.text}. ${storyPeek.hint}`}
+                    >
+                      <span
+                        className={`w-11 h-11 rounded-full shrink-0 flex items-center justify-center ${
+                          isLight ? 'bg-[#ffe0ec]/70 text-[#ec4d86]' : 'bg-[#ec4d86]/15 text-[#ffa3c4]'
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">{storyPeek.icon}</span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-[13px] font-semibold italic truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+                          {storyPeek.text}
+                        </span>
+                        <span className={`block text-[11.5px] truncate mt-0.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+                          {storyPeek.hint}
+                        </span>
+                      </span>
+                      <span className={`material-symbols-outlined text-[20px] shrink-0 ${isLight ? 'text-[#5b6478]' : 'text-[#6e7891]'}`} aria-hidden="true">
+                        chevron_right
+                      </span>
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* Everything below lives behind the expand chevron — by default the card is just
@@ -1148,13 +1120,15 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
                       {currentProfile.audioBio && (
                         <div
-                          className={`p-3.5 rounded-[var(--radius-md)] flex items-center gap-3 transition-all ${
-                            isLight ? 'bg-[#fcf9f2]' : 'bg-[#131f36]'
+                          className={`p-4 rounded-[var(--radius-md)] border flex items-center gap-3 transition-all ${
+                            isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120]/70 border-white/8'
                           }`}
                         >
-                          <span className="material-symbols-outlined text-[20px] text-[#ec4d86] shrink-0">mic</span>
+                          <span className={`w-11 h-11 rounded-full shrink-0 flex items-center justify-center ${isLight ? 'bg-[#ffe0ec]/70 text-[#ec4d86]' : 'bg-[#ec4d86]/15 text-[#ffa3c4]'}`}>
+                            <span className="material-symbols-outlined text-[20px]">mic</span>
+                          </span>
                           <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-[10px] font-bold text-[#ec4d86] block mb-1">Audio-bio</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#ec4d86] block mb-1">Audio-bio</span>
                             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                             <audio controls preload="none" className="w-full h-8" src={currentProfile.audioBio.url} />
                           </div>
@@ -1173,12 +1147,12 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                               }}
                               title={`Me gusta su interés en ${interest.name}`}
                               aria-label={`Me gusta su interés en ${interest.name}`}
-                              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 min-h-[32px] rounded-full transition-transform active:scale-95 ${
-                                isLight ? 'bg-[#fcf9f2] text-[#ec4d86] font-bold' : 'bg-[#131f36] text-[#ffa3c4]'
+                              className={`inline-flex items-center gap-1.5 text-[12px] font-semibold pl-3 pr-2.5 min-h-[36px] rounded-full border transition-transform active:scale-95 ${
+                                isLight ? 'bg-[#fcf9f2] border-[#ffe0ec] text-[#16223b]' : 'bg-white/6 border-white/10 text-[#f5f1e8]/90'
                               }`}
                             >
                               {interest.name}
-                              <span className="material-symbols-outlined text-[13px]">favorite</span>
+                              <span className="material-symbols-outlined text-[15px] text-[#ec4d86]">favorite</span>
                             </button>
                           ))}
                         </div>
@@ -1190,10 +1164,10 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: pIdx * 0.08 }}
-                          className={`p-3.5 rounded-[var(--radius-md)] ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#0a1120]'}`}
+                          className={`p-4 rounded-[var(--radius-md)] border ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120]/70 border-white/8'}`}
                         >
                           <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="text-[11px] font-bold text-[#ec4d86] block">{prompt.question}</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#ec4d86] block pt-2">{prompt.question}</span>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1202,9 +1176,9 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                               }}
                               title="Me gusta esta respuesta"
                               aria-label={`Me gusta su respuesta sobre ${prompt.question}`}
-                              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[#ec4d86] hover:bg-[#ec4d86]/10 active:scale-90 transition-all"
+                              className="shrink-0 w-10 h-10 -mr-1 -mt-1 rounded-full flex items-center justify-center text-[#ec4d86] hover:bg-[#ec4d86]/10 active:scale-90 transition-all"
                             >
-                              <span className="material-symbols-outlined text-[16px]">favorite</span>
+                              <span className="material-symbols-outlined text-[18px]">favorite</span>
                             </button>
                           </div>
                           <p
@@ -1232,84 +1206,15 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                     dismissHint();
                     setShowFullNotebook(true);
                   }}
-                  className={`mx-4 mt-3 flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[11.5px] font-bold transition-colors animate-fadeIn ${
-                    isLight ? 'bg-[#ec4d86]/8 text-[#ec4d86]' : 'bg-white/5 text-[#ffa3c4]'
+                  className={`mx-4 mt-2.5 flex items-center justify-center gap-2 rounded-[var(--radius-md)] px-4 py-2 min-h-[40px] text-[12px] font-semibold transition-colors animate-fadeIn ${
+                    isLight ? 'bg-[#ec4d86]/8 text-[#c9366d]' : 'bg-[#ec4d86]/10 text-[#ffa3c4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[15px]">favorite</span>
-                  Tocá el corazón en lo que te guste — eso también es un me gusta
+                  <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                  <span className="text-center leading-snug">Tocá el corazón en lo que te guste: también cuenta</span>
                 </button>
               )}
 
-              {/* Action row: pasar / me gusta / destacar, con deshacer discreto. */}
-              <div className="pt-4 pb-2 flex items-center justify-center gap-4">
-                <motion.button
-                  whileHover={{ scale: currentIndex > 0 ? 1.08 : 1 }}
-                  whileTap={{ scale: currentIndex > 0 ? 0.92 : 1 }}
-                  id="btn-discover-rewind"
-                  onClick={() => {
-                    if (leaving || currentIndex === 0) return;
-                    sounds.playClick();
-                    setCurrentIndex((prev) => prev - 1);
-                  }}
-                  disabled={currentIndex === 0 || leaving !== null}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-                    currentIndex === 0
-                      ? 'opacity-30 cursor-not-allowed text-slate-400 dark:text-white/30'
-                      : isLight
-                      ? 'text-slate-400 hover:text-[#ec4d86]'
-                      : 'text-white/40 hover:text-[#ffa3c4]'
-                  }`}
-                  title="Deshacer"
-                  aria-label="Deshacer perfil"
-                >
-                  <span className="material-symbols-outlined text-[18px]">replay</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  id="btn-discover-pass"
-                  onClick={() => triggerAction('passed')}
-                  className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shadow-elevation-sm transition-colors ${
-                    isLight ? 'bg-white text-[#ff6b9e]' : 'bg-[#131f3690] text-[#ffa3c4]'
-                  }`}
-                  title="Pasar"
-                  aria-label="Pasar perfil"
-                >
-                  <span className="material-symbols-outlined text-[22px]">close</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.12 }}
-                  whileTap={{ scale: 0.88 }}
-                  id="btn-discover-stamp-like"
-                  onClick={() => triggerAction('liked')}
-                  className="w-[60px] h-[60px] rounded-full bg-gradient-to-br from-[#ec4d86] to-[#ff6b9e] text-white flex items-center justify-center shadow-[0_10px_22px_-6px_rgba(225,29,72,0.55)] transition-all"
-                  title="Me gusta"
-                  aria-label="Me gusta y conectar"
-                >
-                  <span className="material-symbols-outlined text-[27px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    favorite
-                  </span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  id="btn-discover-superlike"
-                  onClick={() => triggerAction('starred')}
-                  className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shadow-elevation-sm transition-colors ${
-                    isLight ? 'bg-white text-[#6fa8c9]' : 'bg-[#131f3690] text-[#6fa8c9]'
-                  }`}
-                  title="Super Spark: le llega tu perfil destacado"
-                  aria-label="Super Spark"
-                >
-                  <span className="material-symbols-outlined text-[21px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    star
-                  </span>
-                </motion.button>
-              </div>
             </Card>
           </motion.div>
           </motion.div>
@@ -1373,6 +1278,170 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </motion.div>
         )}
       </div>
+
+      {/* Pilar 1: la intención manda. Ritual semanal en un tap — declara qué
+          querés esta semana y el descubrimiento se ordena alrededor de eso.
+          Vive debajo de la carta (un scroll) para que la primera pantalla sea
+          foto + acciones. */}
+      {(onSelectIntention || onSelectDailyMood) && (
+        <div className="flex flex-col gap-2 mt-2">
+          <p className="section-kicker px-0.5">Afinar lo que ves</p>
+          {onSelectIntention && (
+            <div
+              className="chip-row-compact flex items-center gap-2 overflow-x-auto no-scrollbar px-0.5 -mx-0.5 py-0.5"
+              role="group"
+              aria-label="Intención de la semana"
+            >
+              <span
+                className={`shrink-0 w-11 text-[10px] font-extrabold tracking-[0.12em] uppercase ${
+                  isLight ? 'text-[#5b6478]' : 'text-[#6e7891]'
+                }`}
+                aria-hidden="true"
+              >
+                Semana
+              </span>
+              {INTENTIONS.map((item) => {
+                const active = intentionId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onSelectIntention(active ? null : item.id);
+                    }}
+                    aria-pressed={active}
+                    title={item.blurb}
+                    className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[12.5px] font-bold whitespace-nowrap transition-all active:scale-95 ${
+                      active
+                        ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] border-transparent text-white shadow-elevation-md'
+                        : isLight
+                          ? 'bg-white border-[rgba(22,34,59,0.12)] text-[#16223b]'
+                          : 'bg-white/6 border-white/10 text-[#f5f1e8]/85'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined text-[16px] ${active ? 'text-white' : 'text-[#ec4d86]'}`}>
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Ritual diario: el pulso de hoy en un tap. Expira solo a la medianoche y
+              solo suma una señal explicada a la afinidad — jamás filtra ni oculta. */}
+          {onSelectDailyMood && (
+            <div
+              className="flex items-center gap-2 overflow-x-auto no-scrollbar px-0.5 -mx-0.5 py-0.5"
+              role="group"
+              aria-label="Ánimo de hoy"
+            >
+              <span
+                className={`shrink-0 w-11 text-[10px] font-extrabold tracking-[0.12em] uppercase ${
+                  isLight ? 'text-[#5b6478]' : 'text-[#6e7891]'
+                }`}
+                aria-hidden="true"
+              >
+                Hoy
+              </span>
+              {DAILY_MOODS.map((mood) => {
+                const active = dailyMoodId === mood.id;
+                return (
+                  <button
+                    key={mood.id}
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onSelectDailyMood(active ? null : mood.id);
+                    }}
+                    aria-pressed={active}
+                    title={mood.blurb}
+                    className={`shrink-0 inline-flex items-center gap-1 h-8 px-3 rounded-full border text-[12px] font-semibold whitespace-nowrap transition-all active:scale-95 ${
+                      active
+                        ? 'bg-[#ec4d86] border-transparent text-white shadow-elevation-sm'
+                        : isLight
+                          ? 'bg-transparent border-[rgba(22,34,59,0.12)] text-[#5b6478]'
+                          : 'bg-transparent border-white/10 text-[#a9b2c9]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">{mood.icon}</span>
+                    {mood.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* El texto explicativo solo aparece cuando hay algo elegido: en reposo
+              la cabecera se queda callada y la carta sube. */}
+          <AnimatePresence initial={false}>
+            {(intention || dailyMoodId) && (
+              <motion.p
+                key={`${intentionId ?? 'none'}-${dailyMoodId ?? 'none'}`}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className={`overflow-hidden px-0.5 text-[11.5px] leading-snug ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}
+                aria-live="polite"
+              >
+                {[
+                  intention ? `Intención: ${intention.label.toLowerCase()} — ${intention.blurb}.` : null,
+                  dailyMoodId ? `Hoy estás para ${getDailyMood(dailyMoodId)?.label.toLowerCase()}; la afinidad lo tiene en cuenta.` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      <LocationPrompt />
+
+      {showPersonOfDayBanner && personOfTheDay && (
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={handleOpenPersonOfDay}
+          className={`flex items-center gap-3 rounded-[var(--radius-md)] border py-2 pl-2 pr-3 text-left tactile-btn min-h-[56px] ${
+            isLight ? 'bg-white border-[#ffe0ec] shadow-elevation-sm' : 'bg-[#0f1a2e] border-[#ec4d86]/20'
+          }`}
+        >
+          <div className="relative w-11 h-11 rounded-full overflow-hidden shrink-0 bg-[#0a1120] flex items-center justify-center ring-2 ring-[#ec4d86]/50">
+            {personOfTheDay.photos[0]?.url ? (
+              <img
+                src={personOfTheDay.photos[0]?.url}
+                alt={personOfTheDay.displayName}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="material-symbols-outlined text-[22px] text-white/40" aria-hidden="true">person</span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="font-label-caps text-[9.5px] uppercase font-extrabold tracking-[0.12em] text-[#ec4d86] flex items-center gap-1">
+              <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                auto_awesome
+              </span>
+              Persona del día
+            </span>
+            <p className={`text-[14px] font-bold truncate leading-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+              {personOfTheDay.displayName}, {personOfTheDay.age}
+              <span className={`font-medium text-[12px] ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}> · elegida para vos</span>
+            </p>
+          </div>
+          <span className={`material-symbols-outlined text-[20px] shrink-0 ${isLight ? 'text-[#5b6478]' : 'text-[#6e7891]'}`}>
+            chevron_right
+          </span>
+        </motion.button>
+      )}
 
       {/* Seguridad integrada: reportar o bloquear sin tener que matchear primero. */}
       {currentProfile && (

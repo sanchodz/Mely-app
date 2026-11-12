@@ -69,16 +69,16 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
           sounds.playClick();
           setOpen(true);
         }}
-        className={`relative h-8 w-8 rounded-2xl active:scale-95 transition-all duration-200 shadow-elevation-sm hover:shadow-elevation-md ${
+        className={`relative h-9 w-9 rounded-full active:scale-95 transition-all duration-200 shadow-elevation-sm hover:shadow-elevation-md ${
           isLight
             ? 'bg-white text-[#16223b] border-[#ffe0ec] hover:border-[#ec4d86]'
-            : 'bg-[#131f36] text-[#ffa3c4] hover:text-[#ffa3c4] border-[#ec4d86]/30'
+            : 'bg-[#131f36] text-[#f5f1e8] hover:text-[#ffa3c4] border-white/10'
         }`}
         aria-label={unreadCount > 0 ? `Notificaciones, ${unreadCount} sin leer` : 'Notificaciones'}
       >
-        <span className="material-symbols-outlined text-[18px]">notifications</span>
+        <span className="material-symbols-outlined text-[20px]">notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white text-[9px] font-bold flex items-center justify-center shadow-elevation-sm">
+          <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ec4d86] text-white text-[10px] font-bold flex items-center justify-center ring-2 ${isLight ? 'ring-[#fcf9f2]' : 'ring-[#0a1120]'}`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -94,8 +94,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
               isLight ? 'border-slate-100' : 'border-white/10'
             }`}
           >
-            <SheetTitle>Notificaciones</SheetTitle>
-            <div className="flex items-center gap-1">
+            <SheetTitle className="text-[18px] font-bold">Notificaciones</SheetTitle>
+            <div className="flex items-center gap-0.5">
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -103,9 +103,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
                     sounds.playClick();
                     markAllRead.mutate();
                   }}
-                  className="text-[12.5px] font-bold text-[#ec4d86] hover:underline cursor-pointer"
+                  className="h-9 px-2.5 rounded-full text-[13px] font-bold text-[#ec4d86] hover:bg-[#ec4d86]/8 cursor-pointer"
                 >
-                  Marcar todo leído
+                  Marcar leídas
                 </button>
               )}
               {items.length > 0 && (
@@ -115,13 +115,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
                     sounds.playClick();
                     setShowDeleteAllConfirm(true);
                   }}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ml-1 ${
-                    isLight ? 'text-slate-400 hover:text-[#ec4d86] hover:bg-slate-50' : 'text-white/40 hover:text-[#ffa3c4] hover:bg-white/5'
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                    isLight ? 'text-[#5b6478] hover:text-[#ec4d86] hover:bg-[#fcf9f2]' : 'text-[#a9b2c9] hover:text-[#ffa3c4] hover:bg-white/8'
                   }`}
                   aria-label="Eliminar todas las notificaciones"
                   title="Eliminar todas las notificaciones"
                 >
-                  <span className="material-symbols-outlined text-[17px]">delete</span>
+                  <span className="material-symbols-outlined text-[20px]">delete</span>
                 </button>
               )}
             </div>
@@ -129,11 +129,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
 
           <div className="flex-1 overflow-y-auto no-scrollbar">
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-16 px-6 text-center">
-                <span className={`material-symbols-outlined text-[36px] ${isLight ? 'text-gray-300' : 'text-white/20'}`}>
-                  notifications_none
+              <div className="flex flex-col items-center justify-center gap-3 py-20 px-6 text-center">
+                <span className={`w-16 h-16 rounded-full flex items-center justify-center ${isLight ? 'bg-[#fcf9f2]' : 'bg-white/5'}`}>
+                  <span className={`material-symbols-outlined text-[32px] ${isLight ? 'text-[#5b6478]/60' : 'text-white/30'}`}>
+                    notifications_none
+                  </span>
                 </span>
-                <p className={`text-[13px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+                <p className={`text-[15px] font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Todo al día</p>
+                <p className={`text-[13px] -mt-1.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
                   Todavía no tenés notificaciones.
                 </p>
               </div>
@@ -141,30 +144,28 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
               items.map((n) => (
                 <div
                   key={n.id}
-                  className={`group relative w-full flex items-start gap-3 p-4 border-b transition-colors ${
-                    isLight ? 'border-slate-100 hover:bg-slate-50' : 'border-white/8 hover:bg-white/5'
-                  }`}
+                  className={`group relative w-full flex items-start gap-2 pl-4 pr-2 py-3.5 border-b transition-colors ${
+                    isLight ? 'border-[#16223b]/6 hover:bg-[#fcf9f2]' : 'border-white/6 hover:bg-white/4'
+                  } ${!n.readAt ? (isLight ? 'bg-[#ec4d86]/4' : 'bg-[#ec4d86]/6') : ''}`}
                 >
-                  {!n.readAt && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#ec4d86]" />}
                   <button type="button" onClick={() => handleItemClick(n)} className="flex-1 min-w-0 flex items-start gap-3 text-left cursor-pointer">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] flex items-center justify-center text-white shrink-0">
-                      <span className="material-symbols-outlined text-[18px]">
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${!n.readAt ? 'bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] text-white' : isLight ? 'bg-[#efe7d8] text-[#5b6478]' : 'bg-white/8 text-[#a9b2c9]'}`}>
+                      <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: !n.readAt ? "'FILL' 1" : "'FILL' 0" }}>
                         {CATEGORY_ICONS[n.category] ?? 'notifications'}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[13.5px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[14px] leading-tight truncate ${!n.readAt ? 'font-bold' : 'font-semibold'} ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
                           {n.title}
                         </span>
-                        {!n.readAt && <span className="w-1.5 h-1.5 rounded-full bg-[#ec4d86] shrink-0" />}
+                        <span className={`text-[11px] shrink-0 ${!n.readAt ? 'text-[#ec4d86] font-semibold' : isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+                          {timeAgo(n.createdAt)}
+                        </span>
                       </div>
-                      <p className={`text-[12.5px] mt-0.5 leading-snug ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+                      <p className={`text-[13px] mt-1 leading-snug line-clamp-2 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
                         {n.body}
                       </p>
-                      <span className={`text-[11px] mt-1 block ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
-                        {timeAgo(n.createdAt)}
-                      </span>
                     </div>
                   </button>
                   <button
@@ -173,13 +174,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
                       sounds.playClick();
                       deleteOne.mutate(n.id);
                     }}
-                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                      isLight ? 'text-slate-300 hover:text-[#ec4d86] hover:bg-slate-100' : 'text-white/25 hover:text-[#ffa3c4] hover:bg-white/10'
+                    className={`shrink-0 w-9 h-9 -mt-1 rounded-full flex items-center justify-center transition-colors ${
+                      isLight ? 'text-[#5b6478]/60 hover:text-[#ec4d86] hover:bg-[#efe7d8]' : 'text-white/30 hover:text-[#ffa3c4] hover:bg-white/10'
                     }`}
                     aria-label="Eliminar notificación"
                     title="Eliminar"
                   >
-                    <span className="material-symbols-outlined text-[16px]">close</span>
+                    <span className="material-symbols-outlined text-[18px]">close</span>
                   </button>
                 </div>
               ))
@@ -190,12 +191,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
 
       <Dialog open={showDeleteAllConfirm} onOpenChange={setShowDeleteAllConfirm}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-[360px] p-6 text-center">
-          <h3 className="font-headline-md text-[18px] font-bold text-red-500">¿Eliminar todas las notificaciones?</h3>
-          <p className={`text-[12px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+          <span className="mx-auto w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[24px]">delete</span>
+          </span>
+          <h3 className={`text-[18px] font-bold leading-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>¿Eliminar todas las notificaciones?</h3>
+          <p className={`text-[13.5px] ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
             No se puede deshacer.
           </p>
           <div className="flex gap-2.5">
-            <Button type="button" variant="tertiary" onClick={() => setShowDeleteAllConfirm(false)} className="flex-1">
+            <Button type="button" variant="tertiary" onClick={() => setShowDeleteAllConfirm(false)} className="flex-1 h-11 rounded-2xl text-[14px] font-bold">
               Cancelar
             </Button>
             <Button
@@ -206,7 +210,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
                 setShowDeleteAllConfirm(false);
               }}
               disabled={deleteAll.isPending}
-              className="flex-1"
+              className="flex-1 h-11 rounded-2xl text-[14px] font-bold"
             >
               Eliminar
             </Button>

@@ -110,5 +110,6 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ onCredential
   // en la app nativa se oculta en vez de mostrar un botón que no hace nada.
   if (!GOOGLE_CLIENT_ID || failed || isNativeApp()) return null;
 
-  return <div ref={containerRef} className="w-full flex justify-center [&>div]:w-full" />;
+  // min-h reserva el alto del botón (40px de GIS) para que el formulario no salte al cargar.
+  return <div ref={containerRef} className="w-full min-h-[44px] flex justify-center items-center [&>div]:w-full" />;
 };

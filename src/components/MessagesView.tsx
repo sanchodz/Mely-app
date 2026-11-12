@@ -246,6 +246,24 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString('es-AR', { hour: 'numeric', minute: '2-digit' });
 }
 
+// Un solo sello por nombre: antes se apilaban dos íconos "verified" (citas +
+// identidad) al lado de cada nombre y hacían ruido. El color dice cuál es el
+// nivel más alto (coral = citas verificadas) y el title conserva el detalle.
+const VerifiedMark: React.FC<{ badges: { trusted: boolean; verified: boolean }; size?: number; className?: string }> = ({ badges, size = 15, className = '' }) => {
+  if (!badges.trusted && !badges.verified) return null;
+  const title = badges.trusted && badges.verified ? 'Identidad y citas verificadas' : badges.trusted ? 'Citas verificadas' : 'Identidad verificada';
+  return (
+    <span
+      className={`material-symbols-outlined shrink-0 ${badges.trusted ? 'text-[#ec4d86]' : 'text-sky-400'} ${className}`}
+      style={{ fontSize: size, fontVariationSettings: "'FILL' 1" }}
+      title={title}
+      aria-label={title}
+    >
+      verified
+    </span>
+  );
+};
+
 export const MessagesView: React.FC<MessagesViewProps> = ({
   matches,
   isLoadingMatches = false,
@@ -540,16 +558,15 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     }
   };
 
-  // El redondeo (rounded-[20px]) se aplica una sola vez en el wrapper de la burbuja —
-  // antes cada rama lo repetía con una asimetría "cola" (rounded-tr/tl-sm) distinta al
-  // estilo iMessage/Telegram que se busca, y el caso de tema preseteado (sin customColor)
-  // ni siquiera la incluía, dejando esa burbuja sin bordes redondeados.
+  // El redondeo (rounded-[18px]) se aplica una sola vez en el wrapper de la burbuja;
+  // la "cola" (esquina de 6px) la decide el agrupado por remitente en el render —
+  // solo el último mensaje seguido de la misma persona la lleva, estilo iMessage/Telegram.
   const getUserBubbleClass = () =>
-    customColor ? 'text-white shadow-elevation-md border border-white/20' : isLight ? currentTheme.userBubbleLight : currentTheme.userBubbleDark;
+    customColor ? 'text-white shadow-elevation-sm' : isLight ? currentTheme.userBubbleLight : currentTheme.userBubbleDark;
   const getPartnerBubbleClass = () =>
     isLight
-      ? 'bg-white text-[#16223b] border border-[#ffe0ec] shadow-elevation-sm'
-      : 'bg-[#131f36] text-[#f5f1e8] border border-[#ec4d86]/25 shadow-elevation-sm';
+      ? 'bg-white text-[#16223b] shadow-elevation-sm'
+      : 'bg-[#1f2e4c] text-[#f5f1e8]';
 
   const handleApplyTheme = (themeId: string) => {
     sounds.playClick();
@@ -710,23 +727,25 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       <div className="flex flex-col w-full flex-1 min-h-[320px] animate-fadeIn">
         {/* Búsqueda y filtros quedan pegados arriba mientras se scrollea la lista — sin
             repetir el título "FINDY Chat" que ya muestra el TopAppBar de la app. */}
-        <div className="shrink-0 pb-3">
-          <div className="relative flex items-center mb-2.5">
-            <span className={`material-symbols-outlined absolute left-3.5 text-[18px] pointer-events-none ${isLight ? 'text-[#6fa8c9]' : 'text-[#ffa3c4]/50'}`}>search</span>
+        <div className="shrink-0 px-1 pt-1 pb-2 flex flex-col gap-3">
+          <div className="relative flex items-center">
+            <span className={`material-symbols-outlined absolute left-4 text-[20px] pointer-events-none ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>search</span>
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar un chat..."
-              className="pl-10 h-11 text-[13px] rounded-2xl"
+              placeholder="Buscar un chat"
+              className={`pl-11 pr-4 h-12 text-[14px] rounded-full border shadow-none ${
+                isLight ? 'bg-white border-[#ffe0ec] placeholder:text-[#5b6478]/70' : 'bg-[#131f36] border-white/8 text-[#f5f1e8] placeholder:text-[#a9b2c9]/70'
+              }`}
             />
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
             {[
               { id: 'all', label: 'Todos', count: matches.length },
               { id: 'unread', label: 'No leídos', count: matches.filter((m) => m.unread > 0).length },
-              { id: 'dates', label: 'Con Citas 🎟️', count: matches.filter((m) => m.status === 'PROPOSAL' || m.status === 'DATE_AGREED').length },
+              { id: 'dates', label: 'Con cita', icon: 'local_cafe', count: matches.filter((m) => m.status === 'PROPOSAL' || m.status === 'DATE_AGREED').length },
             ].map((chip) => {
               const isSelected = inboxFilter === chip.id;
               return (
@@ -737,16 +756,19 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     setInboxFilter(chip.id as 'all' | 'unread' | 'dates');
                   }}
                   aria-pressed={isSelected}
-                  className={`px-3 py-2.5 rounded-full text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap transition-all border shadow-elevation-sm active:scale-95 ${
+                  className={`h-9 pl-3.5 pr-3 rounded-full text-[12.5px] font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all border active:scale-95 ${
                     isSelected
-                      ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white border-transparent'
+                      ? 'bg-[#ec4d86] text-white border-transparent shadow-elevation-sm'
                       : isLight
                       ? 'bg-white text-[#2e5570] border-[#ffe0ec]'
-                      : 'bg-white/5 text-[#ffa3c4]/80 border-[#ec4d86]/20'
+                      : 'bg-[#131f36] text-[#f5f1e8]/85 border-white/8'
                   }`}
                 >
+                  {chip.icon && <span className="material-symbols-outlined text-[15px] -ml-0.5">{chip.icon}</span>}
                   <span>{chip.label}</span>
-                  {chip.count > 0 && <span className={`px-1 rounded-full text-[9px] ${isSelected ? 'bg-white/20 text-white' : isLight ? 'bg-gray-100' : 'bg-black/30'}`}>{chip.count}</span>}
+                  {chip.count > 0 && (
+                    <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center ${isSelected ? 'bg-white/25 text-white' : isLight ? 'bg-[#efe7d8] text-[#16223b]' : 'bg-white/10 text-[#f5f1e8]'}`}>{chip.count}</span>
+                  )}
                 </button>
               );
             })}
@@ -754,15 +776,15 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto no-scrollbar">
-          <div className="space-y-0.5 pb-2">
+          <div className="pb-2">
             {isLoadingMatches && matches.length === 0 ? (
               <div className="space-y-1">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-full py-3 flex items-center gap-3">
-                    <Skeleton className="w-13 h-13 rounded-full shrink-0" />
-                    <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                      <Skeleton className="h-3.5 w-24" />
-                      <Skeleton className="h-3 w-40" />
+                  <div key={i} className="w-full px-2 py-3 flex items-center gap-3.5">
+                    <Skeleton className="w-14 h-14 rounded-full shrink-0" />
+                    <div className="flex-1 min-w-0 flex flex-col gap-2">
+                      <Skeleton className="h-3.5 w-28" />
+                      <Skeleton className="h-3 w-44" />
                     </div>
                   </div>
                 ))}
@@ -792,45 +814,53 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 />
               )
             ) : (
-              filteredMatches.map((match) => (
+              filteredMatches.map((match, idx) => {
+                const hasUnread = match.unread > 0;
+                const isLast = idx === filteredMatches.length - 1;
+                return (
                 <button
                   key={match.id}
                   onClick={() => handleOpenConversation(match.id)}
-                  className={`relative w-full pl-4 pr-2.5 py-3 rounded-2xl flex items-center gap-3 transition-colors text-left group active:scale-[0.99] ${
-                    isLight ? 'hover:bg-[#fcf9f2] active:bg-[#f16b48]/5' : 'hover:bg-[#0f1a2e] active:bg-white/5'
+                  className={`relative w-full px-2 py-3 rounded-2xl flex items-center gap-3.5 transition-colors text-left group active:scale-[0.99] ${
+                    isLight ? 'hover:bg-[#fcf9f2] active:bg-[#efe7d8]' : 'hover:bg-[#0f1a2e] active:bg-white/5'
                   }`}
                 >
-                  {/* Barra de acento en vez de una caja entera resaltada: menos "chip
-                      dentro de chip", el color hace todo el trabajo de indicar no leído. */}
-                  {match.unread > 0 && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-[3px] rounded-full bg-gradient-to-b from-[#ec4d86] to-[#ff6b9e]" />
-                  )}
-                  <div className="relative w-13 h-13 rounded-full overflow-hidden shrink-0 shadow-elevation-sm">
-                    <ProfilePhoto url={match.other.photos[0]?.url} name={match.other.displayName} className="w-full h-full" />
-                    {match.other.lastActive === 'En línea' && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#3f7a5c] border-2 border-white rounded-full" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline gap-2 mb-0.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <h3 className={`font-headline-md text-[14.5px] font-bold truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{match.other.displayName}</h3>
-                        {match.other.badges.trusted && <span className="material-symbols-outlined text-[13px] text-[#ec4d86] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }} title="Citas verificadas">verified</span>}
-                        {match.other.badges.verified && <span className="material-symbols-outlined text-[13px] text-sky-400 shrink-0" style={{ fontVariationSettings: "'FILL' 1" }} title="Identidad verificada">verified</span>}
-                      </div>
-                      {match.lastMessageAt && <span className={`font-meta-data text-[10px] shrink-0 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{formatTime(match.lastMessageAt)}</span>}
+                  <div className="relative shrink-0">
+                    <div className={`w-14 h-14 rounded-full overflow-hidden ${hasUnread ? 'ring-2 ring-[#ec4d86] ring-offset-2' : ''} ${isLight ? 'ring-offset-[#fcf9f2]' : 'ring-offset-[#0a1120]'}`}>
+                      <ProfilePhoto url={match.other.photos[0]?.url} name={match.other.displayName} className="w-full h-full" />
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`text-[12.5px] truncate ${match.unread > 0 ? 'font-semibold text-[#ec4d86]' : isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+                    {match.other.lastActive === 'En línea' && (
+                      <span className={`absolute bottom-0.5 right-0.5 w-3 h-3 bg-emerald-500 rounded-full ring-2 ${isLight ? 'ring-[#fcf9f2]' : 'ring-[#0a1120]'}`} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <h3 className={`text-[15px] leading-tight truncate ${hasUnread ? 'font-bold' : 'font-semibold'} ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{match.other.displayName}</h3>
+                        <VerifiedMark badges={match.other.badges} size={15} />
+                      </div>
+                      {match.lastMessageAt && (
+                        <span className={`text-[11px] shrink-0 tabular-nums ${hasUnread ? 'font-semibold text-[#ec4d86]' : isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+                          {formatTime(match.lastMessageAt)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className={`text-[13px] leading-snug truncate ${hasUnread ? (isLight ? 'font-medium text-[#16223b]' : 'font-medium text-[#f5f1e8]/90') : isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
                         {match.status === 'MATCH' ? '¡Comenzá la conversación!' : match.label}
                       </p>
-                      {match.unread > 0 && (
-                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-elevation-sm">
+                      {hasUnread && (
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#ec4d86] text-white text-[11px] font-bold flex items-center justify-center shrink-0 tabular-nums">
                           {match.unread}
                         </span>
                       )}
                     </div>
                   </div>
+                  {/* Hairline entre filas, alineado con el texto (no con el avatar). */}
+                  {!isLast && <span className={`absolute bottom-0 left-[74px] right-2 h-px ${isLight ? 'bg-[#16223b]/8' : 'bg-white/8'}`} aria-hidden="true" />}
                 </button>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -860,33 +890,32 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoSelected} />
 
       {/* Header */}
-      <div className={`px-3 py-2 border-b flex items-center justify-between shrink-0 relative z-30 shadow-elevation-sm liquid-glass min-h-[56px] ${isLight ? 'bg-white/60 border-[#ffe0ec]/60' : 'bg-[#0f1a2e]/60 border-[#ec4d86]/25'}`}>
-        <div className="flex items-center gap-2 min-w-0 flex-1 mr-1">
-          <Button variant="tertiary" size="icon" onClick={() => { sounds.playClick(); setViewMode('inbox'); setActiveMediaTray(null); onSelectConnection(null); }} className="tap-target h-11 w-11 -ml-2 rounded-full text-[#5b6478] hover:text-[#ec4d86] shrink-0" title="Volver" aria-label="Volver a la lista de chats">
-            <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+      <div className={`pl-1 pr-2 border-b flex items-center justify-between gap-1 shrink-0 relative z-30 liquid-glass min-h-[60px] ${isLight ? 'bg-white/75 border-[#16223b]/8' : 'bg-[#0f1a2e]/75 border-white/8'}`}>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <Button variant="tertiary" size="icon" onClick={() => { sounds.playClick(); setViewMode('inbox'); setActiveMediaTray(null); onSelectConnection(null); }} className={`tap-target h-11 w-11 rounded-full shrink-0 ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`} title="Volver" aria-label="Volver a la lista de chats">
+            <span className="material-symbols-outlined text-[24px]">arrow_back</span>
           </Button>
 
           <button type="button" onClick={() => setShowContactInfoDrawer(true)} aria-label={`Ver info de ${partner.displayName}`} className="relative group shrink-0 rounded-full">
-            <Avatar className="w-9 h-9 border border-[#ec4d86] group-hover:scale-105 transition-transform">
+            <Avatar className="w-10 h-10 group-hover:scale-105 transition-transform">
               <AvatarImage src={partner.photos[0]?.url} alt={partner.displayName} />
               <AvatarFallback>{partner.displayName.slice(0, 2)}</AvatarFallback>
             </Avatar>
-            {partner.lastActive === 'En línea' && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#3f7a5c] border-2 border-white rounded-full" aria-hidden="true" />}
+            {partner.lastActive === 'En línea' && <span className={`absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ${isLight ? 'ring-white' : 'ring-[#0f1a2e]'}`} aria-hidden="true" />}
           </button>
 
-          <button type="button" onClick={() => setShowContactInfoDrawer(true)} aria-label={`Ver info de ${partner.displayName}`} className="flex flex-col min-w-0 flex-1 text-left">
+          <button type="button" onClick={() => setShowContactInfoDrawer(true)} aria-label={`Ver info de ${partner.displayName}`} className="flex flex-col min-w-0 flex-1 text-left py-1">
             <div className="flex items-center gap-1 min-w-0">
-              <span className={`font-headline-md text-[13.5px] font-bold tracking-wide truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{partner.displayName}</span>
-              {partner.badges.trusted && <span className="material-symbols-outlined text-[13px] text-[#ec4d86] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }} title="Citas verificadas">verified</span>}
-              {partner.badges.verified && <span className="material-symbols-outlined text-[13px] text-sky-400 shrink-0" style={{ fontVariationSettings: "'FILL' 1" }} title="Identidad verificada">verified</span>}
+              <span className={`text-[15px] font-bold leading-tight truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{partner.displayName}</span>
+              <VerifiedMark badges={partner.badges} size={15} />
             </div>
-            <div className="text-[10.5px] leading-tight truncate">
+            <div className="text-[11.5px] leading-tight truncate mt-0.5">
               {isPartnerTyping ? (
-                <span className="text-[#ec4d86] font-medium animate-pulse flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-[#ec4d86] rounded-full animate-bounce" />escribiendo...
+                <span className="text-[#ec4d86] font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-[#ec4d86] rounded-full animate-bounce" />escribiendo…
                 </span>
               ) : (
-                <span className={`truncate ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>{partner.lastActive === 'En línea' ? 'en línea' : partner.lastActive}</span>
+                <span className={`truncate ${partner.lastActive === 'En línea' ? 'text-emerald-500 font-medium' : isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{partner.lastActive === 'En línea' ? 'En línea' : partner.lastActive}</span>
               )}
             </div>
           </button>
@@ -896,7 +925,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             estado de verificación) — Ruleta y Personalizar tema se mudan al menú "⋮" de
             abajo. Antes, con las 4 juntas + badge + menú, el nombre/estado de la izquierda
             se comprimía a 0px de ancho en pantallas angostas y quedaba pegado al avatar. */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           {/* Consejos de seguridad — del diseño Premium aprobado: un botón siempre visible
               en el header del chat (antes esta info de confianza no existía en ningún lado
               de la conversación). */}
@@ -904,63 +933,57 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             variant="tertiary"
             size="icon"
             onClick={() => { sounds.playClick(); setShowSafetyTips(true); }}
-            className={`h-8 w-8 rounded-full ${isLight ? 'text-[#2e5570]' : 'text-[#ffa3c4]/80'}`}
+            className={`h-11 w-11 rounded-full ${isLight ? 'text-[#2e5570]' : 'text-[#f5f1e8]/80'}`}
             title="Consejos de seguridad"
             aria-label="Consejos de seguridad"
           >
-            <span className="material-symbols-outlined text-[18px]">shield</span>
+            <span className="material-symbols-outlined text-[22px]">shield</span>
           </Button>
           {onOpenProposeModal && (
-            <Button size="sm" onClick={() => { sounds.playStamp(); onOpenProposeModal(activeMatch.id); }} className="h-8 px-2.5 rounded-full text-[11px] flex items-center gap-1 shrink-0">
-              <span className="material-symbols-outlined text-[15px]">local_cafe</span>
+            <Button size="sm" onClick={() => { sounds.playStamp(); onOpenProposeModal(activeMatch.id); }} className="h-9 pl-3 pr-3.5 rounded-full text-[12.5px] font-bold flex items-center gap-1 shrink-0">
+              <span className="material-symbols-outlined text-[16px]">local_cafe</span>
               <span>Cita</span>
             </Button>
           )}
           {onOpenDateQR && (activeMatch.status === 'DATE_AGREED' || activeMatch.status === 'DATE_VERIFIED' || activeMatch.status === 'SECOND_DATE') && (
             <button
               onClick={() => { sounds.playScanBeep(); onOpenDateQR(activeMatch.id, partner.displayName, partner.photos[0]?.url ?? ''); }}
-              className={`px-2 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1 border transition-all shrink-0 ${
+              className={`h-9 px-2.5 rounded-full text-[11.5px] font-bold flex items-center gap-1 border transition-all shrink-0 ${
                 activeMatch.status === 'DATE_VERIFIED' || activeMatch.status === 'SECOND_DATE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-[#ec4d86]/10 text-[#ec4d86] border-[#ec4d86]/30 animate-pulse'
               }`}
               title="Ver Pase QR"
             >
-              <span className="material-symbols-outlined text-[13px]">{activeMatch.status === 'DATE_VERIFIED' || activeMatch.status === 'SECOND_DATE' ? 'verified' : 'qr_code_2'}</span>
+              <span className="material-symbols-outlined text-[15px]">{activeMatch.status === 'DATE_VERIFIED' || activeMatch.status === 'SECOND_DATE' ? 'verified' : 'qr_code_2'}</span>
               <span>{activeMatch.status === 'DATE_VERIFIED' || activeMatch.status === 'SECOND_DATE' ? 'Verificada' : 'Pase QR'}</span>
             </button>
           )}
           <div className="relative shrink-0">
-            <Button variant="tertiary" size="icon" onClick={() => setShowHeaderMenu(!showHeaderMenu)} className={`h-8 w-8 rounded-full ${isLight ? 'text-[#2e5570]' : 'text-[#ffa3c4]/80'}`} title="Más opciones">
-              <span className="material-symbols-outlined text-[19px]">more_vert</span>
+            <Button variant="tertiary" size="icon" onClick={() => setShowHeaderMenu(!showHeaderMenu)} className={`h-11 w-11 rounded-full ${isLight ? 'text-[#2e5570]' : 'text-[#f5f1e8]/80'}`} title="Más opciones" aria-label="Más opciones">
+              <span className="material-symbols-outlined text-[22px]">more_vert</span>
             </Button>
             {showHeaderMenu && (
               <>
                 <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowHeaderMenu(false)} />
-                <div className={`absolute right-0 top-10 w-56 rounded-2xl shadow-2xl border p-1.5 z-50 animate-scaleUp ${isLight ? 'bg-white border-[#ffe0ec] text-[#16223b]' : 'bg-[#0f1a2e] border-[#ec4d86]/40 text-[#f5f1e8]'}`}>
-                  <button onClick={() => { setShowHeaderMenu(false); setShowContactInfoDrawer(true); }} className="w-full text-left px-3 py-2 text-[12px] font-medium rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px] text-[#ec4d86]">account_circle</span>
-                    <span>Ver perfil de {partner.displayName}</span>
-                  </button>
-                  <button onClick={() => { setShowHeaderMenu(false); setInChatSearchOpen(!inChatSearchOpen); }} className="w-full text-left px-3 py-2 text-[12px] font-medium rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px] text-[#ec4d86]">search</span>
-                    <span>Buscar en este chat</span>
-                  </button>
-                  <button onClick={() => { setShowHeaderMenu(false); setActiveMediaTray('stickers'); }} className="w-full text-left px-3 py-2 text-[12px] font-medium rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px] text-[#ec4d86]">auto_awesome</span>
-                    <span>Panel de Stickers</span>
-                  </button>
-                  {onOpenIcebreaker && (
-                    <button onClick={() => { setShowHeaderMenu(false); onOpenIcebreaker(partner.displayName); }} className="w-full text-left px-3 py-2 text-[12px] font-medium rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2">
-                      <span className={`material-symbols-outlined text-[16px] ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>casino</span>
-                      <span>Ruleta de Preguntas</span>
+                <div className={`absolute right-0 top-12 w-64 rounded-2xl shadow-2xl border p-1.5 z-50 animate-scaleUp ${isLight ? 'bg-white border-[#16223b]/8 text-[#16223b]' : 'bg-[#131f36] border-white/10 text-[#f5f1e8]'}`}>
+                  {[
+                    { icon: 'account_circle', label: `Ver perfil de ${partner.displayName}`, onClick: () => setShowContactInfoDrawer(true) },
+                    { icon: 'search', label: 'Buscar en este chat', onClick: () => setInChatSearchOpen(!inChatSearchOpen) },
+                    { icon: 'auto_awesome', label: 'Panel de stickers', onClick: () => setActiveMediaTray('stickers') },
+                    ...(onOpenIcebreaker ? [{ icon: 'casino', label: 'Ruleta de preguntas', onClick: () => onOpenIcebreaker(partner.displayName) }] : []),
+                    { icon: 'palette', label: 'Personalizar tema', onClick: () => setShowThemeCustomizer(true) },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => { setShowHeaderMenu(false); item.onClick(); }}
+                      className={`w-full text-left px-3 h-11 text-[13.5px] font-medium rounded-xl flex items-center gap-3 ${isLight ? 'hover:bg-[#fcf9f2]' : 'hover:bg-white/8'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px] text-[#ec4d86]">{item.icon}</span>
+                      <span className="truncate">{item.label}</span>
                     </button>
-                  )}
-                  <button onClick={() => { setShowHeaderMenu(false); setShowThemeCustomizer(true); }} className="w-full text-left px-3 py-2 text-[12px] font-medium rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px] text-[#ec4d86]">palette</span>
-                    <span>Personalizar tema</span>
-                  </button>
-                  <div className={`my-1 h-px ${isLight ? 'bg-[#ffe0ec]' : 'bg-white/10'}`} />
-                  <button onClick={() => { setShowHeaderMenu(false); setShowReportBlock(true); }} className="w-full text-left px-3 py-2 text-[12px] font-medium rounded-xl hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 text-red-500">
-                    <span className="material-symbols-outlined text-[16px]">flag</span>
+                  ))}
+                  <div className={`my-1 h-px ${isLight ? 'bg-[#16223b]/8' : 'bg-white/10'}`} />
+                  <button onClick={() => { setShowHeaderMenu(false); setShowReportBlock(true); }} className={`w-full text-left px-3 h-11 text-[13.5px] font-medium rounded-xl flex items-center gap-3 text-red-500 ${isLight ? 'hover:bg-red-50' : 'hover:bg-red-500/10'}`}>
+                    <span className="material-symbols-outlined text-[20px]">flag</span>
                     <span>Reportar o bloquear</span>
                   </button>
                 </div>
@@ -971,52 +994,52 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       </div>
 
       {/* Progreso de la conexión — barra de 6 etapas del diseño Premium aprobado. */}
-      <div className={`px-3.5 pt-2 pb-1.5 shrink-0 flex flex-col gap-1.5 relative z-20 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
-        <div className="flex gap-1">
+      <div className={`px-4 pt-2.5 pb-2 shrink-0 flex items-center gap-3 relative z-20 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
+        <div className="flex gap-1 flex-1" role="img" aria-label={`Etapa ${connectionStageIndex + 1} de ${CONNECTION_STAGE_ORDER.length}: ${CONNECTION_STAGE_NAMES[activeMatch.status]}`}>
           {CONNECTION_STAGE_ORDER.map((stage, i) => (
             <span
               key={stage}
-              className="flex-1 h-1 rounded-full transition-colors"
-              style={{ background: i <= connectionStageIndex ? 'var(--coral-500)' : isLight ? 'rgba(22,34,59,0.12)' : 'var(--midnight-700)' }}
+              className="flex-1 h-1.5 rounded-full transition-colors"
+              style={{ background: i <= connectionStageIndex ? '#ec4d86' : isLight ? 'rgba(22,34,59,0.12)' : 'rgba(255,255,255,0.1)' }}
             />
           ))}
         </div>
-        <span className={`text-[10.5px] font-bold ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/60'}`}>
-          {CONNECTION_STAGE_NAMES[activeMatch.status]} · paso {connectionStageIndex + 1} de {CONNECTION_STAGE_ORDER.length}
+        <span className={`text-[11px] font-semibold shrink-0 tabular-nums ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+          {CONNECTION_STAGE_NAMES[activeMatch.status]} · {connectionStageIndex + 1}/{CONNECTION_STAGE_ORDER.length}
         </span>
       </div>
 
       {inChatSearchOpen && (
-        <div className={`px-3 py-2 border-b flex items-center gap-2 animate-fadeIn z-20 ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0f1a2e] border-[#ec4d86]/30'}`}>
-          <span className="material-symbols-outlined text-[18px] text-[#ec4d86]">search</span>
+        <div className={`px-3 py-2 border-b flex items-center gap-2 animate-fadeIn z-20 ${isLight ? 'bg-[#fcf9f2] border-[#16223b]/8' : 'bg-[#0f1a2e] border-white/8'}`}>
+          <span className="material-symbols-outlined text-[20px] text-[#ec4d86]">search</span>
           <input
             type="text"
             value={inChatSearchTerm}
             onChange={(e) => setInChatSearchTerm(e.target.value)}
-            placeholder="Buscar en este chat..."
-            className={`flex-1 text-[12.5px] bg-transparent border-0 focus:outline-none ${isLight ? 'text-[#16223b] placeholder:text-[#5b6478]/70' : 'text-white placeholder:text-[#a9b2c9]/70'}`}
+            placeholder="Buscar en este chat"
+            className={`flex-1 h-10 text-[14px] bg-transparent border-0 focus:outline-none ${isLight ? 'text-[#16223b] placeholder:text-[#5b6478]/70' : 'text-white placeholder:text-[#a9b2c9]/70'}`}
             autoFocus
           />
-          <Button variant="tertiary" size="sm" onClick={() => setInChatSearchOpen(false)} className="h-7 px-2 text-[11px]">Listo</Button>
+          <Button variant="tertiary" size="sm" onClick={() => setInChatSearchOpen(false)} className="h-9 px-3 text-[13px] font-bold text-[#ec4d86]">Listo</Button>
         </div>
       )}
 
       {/* Facilitador de plan: la charla tiene cuerpo pero nadie propuso nada todavía. */}
       {showPlanNudge && (
-        <div className={`px-3 pt-2 shrink-0 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
+        <div className={`px-3 pt-1 pb-1 shrink-0 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
           <div
-            className={`p-3 rounded-2xl border flex items-center gap-2.5 animate-fadeIn ${
-              isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#131f36] border-[#ec4d86]/30'
+            className={`p-3 rounded-2xl border flex items-center gap-3 animate-fadeIn ${
+              isLight ? 'bg-white border-[#16223b]/8 shadow-elevation-sm' : 'bg-[#131f36] border-white/8'
             }`}
           >
-            <span className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] text-white flex items-center justify-center shrink-0 shadow-elevation-sm">
-              <span className="material-symbols-outlined text-[18px]">local_cafe</span>
+            <span className="w-10 h-10 rounded-xl bg-[#ec4d86]/12 text-[#ec4d86] flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[20px]">local_cafe</span>
             </span>
             <div className="flex-1 min-w-0">
-              <p className={`text-[12px] font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+              <p className={`text-[13.5px] font-bold leading-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
                 La charla viene bien…
               </p>
-              <p className={`text-[11px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+              <p className={`text-[12px] mt-0.5 truncate ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
                 ¿La bajamos a un plan real con {partner.displayName.split(' ')[0]}?
               </p>
             </div>
@@ -1027,7 +1050,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   sounds.playStamp();
                   onOpenProposeModal(activeMatch.id);
                 }}
-                className="h-8 px-3 rounded-full bg-[#ec4d86] text-white text-[11px] font-bold shrink-0 active:scale-95 transition-transform"
+                className="h-9 px-3.5 rounded-full bg-[#ec4d86] text-white text-[12.5px] font-bold shrink-0 active:scale-95 transition-transform"
               >
                 Proponer
               </button>
@@ -1037,9 +1060,9 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               onClick={dismissPlanNudge}
               aria-label="Descartar sugerencia"
               title="Descartar"
-              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'text-[#5b6478] hover:bg-black/5' : 'text-[#ffa3c4]/70 hover:bg-white/10'}`}
+              className={`w-9 h-9 -mr-1 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'text-[#5b6478] hover:bg-black/5' : 'text-[#a9b2c9] hover:bg-white/10'}`}
             >
-              <span className="material-symbols-outlined text-[15px]">close</span>
+              <span className="material-symbols-outlined text-[18px]">close</span>
             </button>
           </div>
         </div>
@@ -1047,66 +1070,71 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
       {/* Active proposal sticky card */}
       {activeProposal && hiddenProposalIds.includes(activeProposal.id) && (
-        <div className={`px-3 pt-2 shrink-0 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
+        <div className={`px-3 pt-1 pb-1 shrink-0 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
           <button
             type="button"
             onClick={() => restoreProposalCard(activeProposal.id)}
-            className={`w-full flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-bold transition-colors ${
-              isLight ? 'bg-white border-[#ffe0ec] text-[#ec4d86] hover:border-[#ec4d86]' : 'bg-[#131f36] border-[#ec4d86]/30 text-[#ffa3c4] hover:border-[#ec4d86]/60'
+            className={`w-full flex items-center gap-2 h-10 px-4 rounded-full border text-[12.5px] font-bold transition-colors ${
+              isLight ? 'bg-white border-[#16223b]/8 text-[#ec4d86]' : 'bg-[#131f36] border-white/8 text-[#ffa3c4]'
             }`}
           >
-            <span className="material-symbols-outlined text-[14px]">event</span>
+            <span className="material-symbols-outlined text-[18px]">event</span>
             Próxima cita
-            <span className="material-symbols-outlined text-[14px] ml-auto">expand_more</span>
+            <span className="material-symbols-outlined text-[18px] ml-auto">expand_more</span>
           </button>
         </div>
       )}
       {activeProposal && !hiddenProposalIds.includes(activeProposal.id) && (
-        <div className={`px-3 pt-2 shrink-0 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
-          <div className={`p-3 rounded-2xl border-2 flex flex-col gap-2 ${isLight ? 'bg-[#fcf9f2] border-[#ec4d86]/40' : 'bg-[#131f36] border-[#ec4d86]/50'}`}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <span className="text-[10px] uppercase tracking-wide block font-bold text-[#ec4d86]">Próxima cita</span>
-                <p className={`text-[12px] truncate ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+        <div className={`px-3 pt-1 pb-1 shrink-0 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}>
+          <div className={`p-3.5 rounded-2xl border flex flex-col gap-3 ${isLight ? 'bg-white border-[#ec4d86]/25 shadow-elevation-sm' : 'bg-[#131f36] border-[#ec4d86]/30'}`}>
+            <div className="flex items-start gap-3">
+              <span className="w-10 h-10 rounded-xl bg-[#ec4d86]/12 text-[#ec4d86] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[20px]">event</span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className="text-[10.5px] uppercase tracking-[0.12em] block font-bold text-[#ec4d86] leading-none mb-1">Próxima cita</span>
+                <p className={`text-[14px] font-semibold leading-snug ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
                   {activeProposal.scheduledAt
-                    ? new Date(activeProposal.scheduledAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
-                    : 'A coordinar por chat'}{' '}
-                  · {activeProposal.zone}
+                    ? new Date(activeProposal.scheduledAt).toLocaleString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+                    : 'A coordinar por chat'}
                 </p>
+                <p className={`text-[12px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{activeProposal.zone}</p>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {activeProposal.status === 'PENDING' && activeProposal.proposerId !== user?.id ? (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setCounterFormOpen((prev) => !prev)}
-                      className="h-8 px-2.5 text-[11px] font-bold rounded-xl"
-                    >
-                      {activeProposal.scheduledAt ? 'Cambiar hora' : 'Proponer hora'}
-                    </Button>
-                    <Button size="sm" onClick={() => acceptProposal.mutate(activeProposal.id)} className="h-8 px-3 text-[11px] rounded-xl">
-                      Aceptar
-                    </Button>
-                  </>
-                ) : (
-                  <Badge className="shrink-0 text-[10px] bg-[#ec4d86]/15 text-[#ec4d86] border border-[#ec4d86]/30">
+              <div className="flex items-center gap-1 shrink-0 -mr-1.5 -mt-1">
+                {!(activeProposal.status === 'PENDING' && activeProposal.proposerId !== user?.id) && (
+                  <Badge className="shrink-0 h-6 px-2 text-[10.5px] font-bold bg-[#ec4d86]/12 text-[#ec4d86] border-0">
                     {activeProposal.status === 'PENDING' ? 'Esperando' : activeProposal.status === 'ACCEPTED' ? 'Aceptada' : 'Contrapropuesta'}
                   </Badge>
                 )}
                 <button
                   type="button"
                   onClick={() => dismissProposalCard(activeProposal.id)}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
                     isLight ? 'text-[#5b6478] hover:text-[#ec4d86] hover:bg-black/5' : 'text-[#a9b2c9] hover:text-[#ffa3c4] hover:bg-white/10'
                   }`}
                   aria-label="Ocultar tarjeta de próxima cita"
                   title="Ocultar"
                 >
-                  <span className="material-symbols-outlined text-[15px]">close</span>
+                  <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>
               </div>
             </div>
+
+            {activeProposal.status === 'PENDING' && activeProposal.proposerId !== user?.id && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setCounterFormOpen((prev) => !prev)}
+                  className="flex-1 h-10 text-[13px] font-bold rounded-xl"
+                >
+                  {activeProposal.scheduledAt ? 'Cambiar hora' : 'Proponer hora'}
+                </Button>
+                <Button size="sm" onClick={() => acceptProposal.mutate(activeProposal.id)} className="flex-1 h-10 text-[13px] font-bold rounded-xl">
+                  Aceptar
+                </Button>
+              </div>
+            )}
 
             {/* Acción de check-in — del diseño Premium aprobado: una vez que la cita está
                 acordada, el atajo para verificar con QR aparece directo en la tarjeta,
@@ -1115,11 +1143,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               <button
                 type="button"
                 onClick={() => { sounds.playScanBeep(); onOpenDateQR(activeMatch.id, partner.displayName, partner.photos[0]?.url ?? ''); }}
-                className={`flex items-center justify-center gap-1.5 h-8 rounded-xl border text-[11px] font-bold transition-colors ${
+                className={`flex items-center justify-center gap-2 h-10 rounded-xl border text-[13px] font-bold transition-colors ${
                   isLight ? 'border-[#ec4d86]/30 text-[#ec4d86] hover:bg-[#ec4d86]/5' : 'border-[#ec4d86]/30 text-[#ffa3c4] hover:bg-white/5'
                 }`}
               >
-                <span className="material-symbols-outlined text-[14px]">qr_code_2</span>
+                <span className="material-symbols-outlined text-[18px]">qr_code_2</span>
                 Ya estamos ahí · Verificar con QR
               </button>
             )}
@@ -1134,22 +1162,22 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     { onSuccess: () => setCounterFormOpen(false) },
                   );
                 }}
-                className="flex items-center gap-1.5 pt-1 border-t border-[#ec4d86]/20"
+                className={`flex items-center gap-2 pt-3 border-t ${isLight ? 'border-[#16223b]/8' : 'border-white/8'}`}
               >
                 <input
                   type="datetime-local"
                   value={counterAt}
                   onChange={(e) => setCounterAt(e.target.value)}
                   required
-                  className={`flex-1 min-w-0 border rounded-xl px-2.5 py-1.5 text-[12px] focus:outline-none ${
-                    isLight ? 'bg-white border-[#ffe0ec] text-[#16223b]' : 'bg-[#0a1120] border-[#ec4d86]/25 text-[#f5f1e8]'
+                  className={`flex-1 min-w-0 h-10 border rounded-xl px-3 text-[13px] focus:outline-none focus:border-[#ec4d86] ${
+                    isLight ? 'bg-white border-[#16223b]/12 text-[#16223b]' : 'bg-[#0a1120] border-white/10 text-[#f5f1e8]'
                   }`}
                 />
                 <Button
                   type="submit"
                   size="sm"
                   disabled={counterProposal.isPending}
-                  className="h-8 px-3 text-[11px] rounded-xl shrink-0"
+                  className="h-10 px-4 text-[13px] font-bold rounded-xl shrink-0"
                 >
                   Enviar
                 </Button>
@@ -1168,22 +1196,22 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       <div
         ref={messagesScrollRef}
         onScroll={handleMessagesScroll}
-        className="flex-1 min-h-0 overflow-y-auto p-3 flex flex-col gap-2 relative z-10 no-scrollbar select-text transition-all duration-300"
+        className="flex-1 min-h-0 overflow-y-auto px-3 pt-3 pb-2 flex flex-col relative z-10 no-scrollbar select-text transition-all duration-300"
         style={getWallpaperStyle()}
       >
         {/* Cargando: esqueleto de burbujas con la geometría real del chat, no
             un spinner genérico ni una página en blanco. */}
         {isLoadingMessages && messages.length === 0 && (
-          <div className="flex flex-col gap-2 animate-fadeIn" aria-label="Cargando mensajes">
-            <div className="self-start max-w-[75%] flex flex-col gap-1.5">
-              <Skeleton className="h-9 w-44 rounded-[20px] rounded-bl-md" />
-              <Skeleton className="h-9 w-32 rounded-[20px] rounded-bl-md" />
+          <div className="flex flex-col gap-3 animate-fadeIn" aria-label="Cargando mensajes">
+            <div className="self-start max-w-[75%] flex flex-col gap-1">
+              <Skeleton className="h-10 w-44 rounded-[18px] rounded-bl-md" />
+              <Skeleton className="h-10 w-32 rounded-[18px] rounded-bl-md" />
             </div>
-            <div className="self-end max-w-[75%] flex flex-col items-end gap-1.5">
-              <Skeleton className="h-9 w-40 rounded-[20px] rounded-br-md" />
+            <div className="self-end max-w-[75%] flex flex-col items-end gap-1">
+              <Skeleton className="h-10 w-40 rounded-[18px] rounded-br-md" />
             </div>
             <div className="self-start max-w-[75%]">
-              <Skeleton className="h-9 w-52 rounded-[20px] rounded-bl-md" />
+              <Skeleton className="h-10 w-52 rounded-[18px] rounded-bl-md" />
             </div>
           </div>
         )}
@@ -1199,11 +1227,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           />
         )}
 
-        <div className="flex justify-center mb-1 mt-auto">
-          <div className={`max-w-xs px-3 py-1.5 rounded-xl border text-center text-[10px] leading-tight shadow-elevation-sm backdrop-blur-md ${isLight ? 'bg-white/80 border-[#ffe0ec] text-[#2e5570]' : 'bg-[#131f36]/80 border-[#ec4d86]/30 text-[#ffa3c4]/80'}`}>
-            <span className="inline-flex items-center gap-1 font-bold text-[#ec4d86] mb-0.5">
-              <span className="material-symbols-outlined text-[12px]">lock</span>Conexión Privada FINDY
-            </span>
+        <div className="flex justify-center mb-3 mt-auto">
+          <div className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-semibold backdrop-blur-md ${isLight ? 'bg-white/80 text-[#5b6478]' : 'bg-[#131f36]/80 text-[#a9b2c9]'}`}>
+            <span className="material-symbols-outlined text-[13px] text-[#ec4d86]" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+            Conexión privada Findy
           </div>
         </div>
 
@@ -1211,26 +1238,28 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             match nació de un fragmento concreto, se muestra como primer tema; si
             no, quedan los tres caminos (pregunta, plan, chispa). */}
         {!isLoadingMessages && !messagesError && filteredMessages.length === 0 && !inChatSearchTerm.trim() && (
-          <div className="flex flex-col items-center text-center gap-3 py-6 px-4 animate-fadeIn">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#ec4d86]/50 shadow-elevation-md bg-[#0a1120] flex items-center justify-center">
-              {partner.photos[0]?.url ? (
-                <img
-                  src={partner.photos[0]?.url}
-                  alt={partner.displayName}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span className="text-[20px] font-bold text-white/60" aria-hidden="true">
-                  {partner.displayName.slice(0, 2).toUpperCase()}
-                </span>
-              )}
+          <div className="flex flex-col items-center text-center gap-4 py-8 px-4 animate-fadeIn">
+            <div className="w-20 h-20 rounded-full p-[3px] bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] shadow-elevation-md">
+              <div className={`w-full h-full rounded-full overflow-hidden flex items-center justify-center ${isLight ? 'bg-white' : 'bg-[#0a1120]'}`}>
+                {partner.photos[0]?.url ? (
+                  <img
+                    src={partner.photos[0]?.url}
+                    alt={partner.displayName}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className={`text-[22px] font-bold ${isLight ? 'text-[#16223b]/60' : 'text-white/60'}`} aria-hidden="true">
+                    {partner.displayName.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
             </div>
-            <div>
-              <p className={`text-[14px] font-bold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+            <div className="max-w-[280px]">
+              <p className={`text-[17px] font-bold leading-tight ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
                 {contextLabel ? `Conectaron por: ${contextLabel}` : `Conectaste con ${partner.displayName}`}
               </p>
-              <p className={`text-[12px] mt-1 ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+              <p className={`text-[13.5px] leading-relaxed mt-1.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
                 {contextLabel
                   ? 'Ya tenés de qué hablar — empezá por ahí.'
                   : 'Rompé el hielo con una pregunta o proponé un plan.'}
@@ -1242,9 +1271,9 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   variant="primary"
                   type="button"
                   onClick={() => { sounds.playClick(); onOpenIcebreaker(partner.displayName); }}
-                  className="h-9 px-4 rounded-full text-[12px] font-bold gap-1.5"
+                  className="h-11 px-5 rounded-full text-[13.5px] font-bold gap-2"
                 >
-                  <span className="material-symbols-outlined text-[15px]">casino</span>
+                  <span className="material-symbols-outlined text-[18px]">casino</span>
                   Pregunta inicial
                 </Button>
               )}
@@ -1252,11 +1281,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 <button
                   type="button"
                   onClick={() => { sounds.playStamp(); onOpenProposeModal(activeMatch.id); }}
-                  className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-full border-[1.5px] text-[12px] font-bold transition-colors ${
-                    isLight ? 'border-[#ec4d86] text-[#ec4d86] hover:bg-[#ec4d86]/5' : 'border-[#ec4d86] text-[#ffa3c4] hover:bg-white/5'
+                  className={`inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] text-[13.5px] font-bold transition-colors ${
+                    isLight ? 'border-[#ec4d86] text-[#ec4d86] hover:bg-[#ec4d86]/5' : 'border-[#ec4d86]/70 text-[#ffa3c4] hover:bg-white/5'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[15px]">local_cafe</span>
+                  <span className="material-symbols-outlined text-[18px]">local_cafe</span>
                   Proponer plan
                 </button>
               )}
@@ -1264,17 +1293,22 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           </div>
         )}
 
-        {filteredMessages.map((msg: Message) => {
+        {filteredMessages.map((msg: Message, idx) => {
           const isUser = msg.senderId === user?.id;
           const sticker = msg.type === 'TEXT' ? parseSticker(msg.body) : null;
           const gif = msg.type === 'TEXT' ? parseGif(msg.body) : null;
           const isImage = msg.type === 'IMAGE' && !!msg.imageUrl;
           const msgReaction = localReactions[msg.id];
           const isStarred = starredMsgIds.includes(msg.id);
+          // Agrupado por remitente (como iMessage/Telegram): los mensajes seguidos
+          // de la misma persona van pegados y solo el último lleva la "cola".
+          const sameAsPrev = idx > 0 && filteredMessages[idx - 1].senderId === msg.senderId;
+          const sameAsNext = idx < filteredMessages.length - 1 && filteredMessages[idx + 1].senderId === msg.senderId;
+          const tailClass = sameAsNext ? '' : isUser ? 'rounded-br-[6px]' : 'rounded-bl-[6px]';
 
           return (
-            <div key={msg.id} className={`flex flex-col group relative ${isUser ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[85%] relative flex items-end gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div key={msg.id} className={`flex flex-col group relative ${sameAsPrev ? 'mt-1' : 'mt-3'} ${msgReaction ? 'mb-2.5' : ''} ${isUser ? 'items-end' : 'items-start'}`}>
+              <div className={`max-w-[82%] relative flex items-end gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
                 {sticker ? (
                   <div
                     onClick={() => {
@@ -1290,12 +1324,12 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     onMouseLeave={cancelLongPress}
                     className="relative cursor-pointer transition-transform hover:scale-105 active:scale-95 py-1"
                   >
-                    <div className="w-32 h-32 rounded-3xl bg-white dark:bg-[#131f36] border-2 border-[#ec4d86]/40 shadow-xl flex flex-col items-center justify-center p-3 text-center relative overflow-hidden">
+                    <div className={`w-32 h-32 rounded-3xl shadow-elevation-md flex flex-col items-center justify-center p-3 text-center relative overflow-hidden ${isLight ? 'bg-white' : 'bg-[#1f2e4c]'}`}>
                       <span className="text-5xl select-none">{sticker.emoji}</span>
-                      <span className="font-label-caps text-[9px] font-bold uppercase tracking-wider text-[#ec4d86] mt-2 line-clamp-2 px-1">{sticker.badgeText || sticker.title}</span>
-                      <div className="absolute bottom-1 right-1.5 flex items-center gap-0.5 bg-black/40 text-white px-1.5 py-0.5 rounded-full text-[8.5px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#ec4d86] mt-2 line-clamp-2 px-1">{sticker.badgeText || sticker.title}</span>
+                      <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 bg-black/45 text-white px-1.5 py-0.5 rounded-full text-[9px] font-medium">
                         <span>{formatTime(msg.createdAt)}</span>
-                        {isUser && msg.readAt && <span className="material-symbols-outlined text-[10px] text-[#6fa8c9]">done_all</span>}
+                        {isUser && msg.readAt && <span className="material-symbols-outlined text-[11px] text-[#6fa8c9]">done_all</span>}
                       </div>
                     </div>
                     {isStarred && <span className="absolute -top-1 -right-1 material-symbols-outlined text-amber-400 text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>}
@@ -1309,48 +1343,48 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     onMouseDown={() => startLongPress(msg.id)}
                     onMouseUp={cancelLongPress}
                     onMouseLeave={cancelLongPress}
-                    className={`p-2.5 sm:p-3 relative transition-all shadow-elevation-md rounded-[20px] select-none ${isUser ? getUserBubbleClass() : getPartnerBubbleClass()}`}
+                    className={`px-3.5 pt-2 pb-1.5 relative transition-all rounded-[18px] select-none ${tailClass} ${isUser ? getUserBubbleClass() : getPartnerBubbleClass()}`}
                   >
                     {msg.replyTo && (
-                      <div className={`mb-1.5 pl-2 pr-1 py-1 rounded-lg border-l-2 max-w-[220px] ${
-                        isUser ? 'border-l-white/50 bg-black/10' : isLight ? 'border-l-[#ec4d86] bg-black/[0.03]' : 'border-l-[#ec4d86] bg-white/5'
+                      <div className={`mb-1.5 -mx-1 pl-2.5 pr-2 py-1.5 rounded-lg border-l-[3px] max-w-[240px] ${
+                        isUser ? 'border-l-white/60 bg-black/12' : isLight ? 'border-l-[#ec4d86] bg-[#16223b]/5' : 'border-l-[#ec4d86] bg-white/6'
                       }`}>
-                        <span className={`block text-[9.5px] font-bold ${isUser ? 'text-white/80' : 'text-[#ec4d86]'}`}>
+                        <span className={`block text-[11px] font-bold ${isUser ? 'text-white/85' : 'text-[#ec4d86]'}`}>
                           {msg.replyTo.senderId === msg.senderId ? 'Se respondió a sí mismo' : msg.replyTo.senderId === user?.id ? 'Vos' : partner.displayName}
                         </span>
-                        <span className={`block text-[11px] truncate ${isUser ? 'text-white/70' : isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+                        <span className={`block text-[12.5px] truncate ${isUser ? 'text-white/75' : isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
                           {msg.replyTo.type === 'IMAGE' ? '📷 Foto' : msg.replyTo.body}
                         </span>
                       </div>
                     )}
                     {gif && (
-                      <div className="mb-2 rounded-xl overflow-hidden max-w-[220px] border border-black/10">
+                      <div className="mb-1.5 -mx-1.5 mt-0.5 rounded-xl overflow-hidden max-w-[240px]">
                         <img src={gif.url} alt={gif.title} loading="lazy" decoding="async" className="w-full h-auto object-cover max-h-52 rounded-xl" referrerPolicy="no-referrer" />
-                        <span className="block text-[10px] font-bold px-1.5 py-1">{gif.tag}</span>
+                        <span className="block text-[11.5px] font-semibold px-1.5 pt-1.5">{gif.tag}</span>
                       </div>
                     )}
                     {isImage && (
-                      <div className="mb-2 rounded-xl overflow-hidden max-w-[240px] border border-black/10">
-                        <img src={msg.imageUrl ?? undefined} alt="Foto enviada" loading="lazy" decoding="async" className="w-full h-auto object-cover max-h-52 rounded-xl cursor-pointer" referrerPolicy="no-referrer" />
+                      <div className="mb-1.5 -mx-1.5 mt-0.5 rounded-xl overflow-hidden max-w-[260px]">
+                        <img src={msg.imageUrl ?? undefined} alt="Foto enviada" loading="lazy" decoding="async" className="w-full h-auto object-cover max-h-60 rounded-xl cursor-pointer" referrerPolicy="no-referrer" />
                       </div>
                     )}
                     {!gif && !isImage && (
-                      <p className="font-body-sm text-[13px] leading-relaxed break-words">{msg.body}</p>
+                      <p className="text-[14.5px] leading-[1.45] break-words">{msg.body}</p>
                     )}
-                    <div className="flex items-center justify-end gap-1 mt-0.5 select-none text-[9.5px] opacity-75">
+                    <div className={`flex items-center justify-end gap-1 mt-0.5 -mb-0.5 select-none text-[10px] font-medium tabular-nums ${isUser ? 'text-white/70' : isLight ? 'text-[#5b6478]/80' : 'text-[#a9b2c9]/80'}`}>
                       {isStarred && <span className="material-symbols-outlined text-[12px] text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>}
                       <span>{formatTime(msg.createdAt)}</span>
                       {/* Estado de envío: un tilde al enviar, doble celeste al
                           leer. Antes solo existía el "leído" y nada confirmaba
                           que el mensaje había salido. */}
                       {isUser && (msg.readAt ? (
-                        <span className="material-symbols-outlined text-[13px] text-[#6fa8c9]" title="Leído">done_all</span>
+                        <span className="material-symbols-outlined text-[14px] text-[#6fa8c9]" title="Leído">done_all</span>
                       ) : (
-                        <span className="material-symbols-outlined text-[13px] opacity-70" title="Enviado">done</span>
+                        <span className="material-symbols-outlined text-[14px] opacity-80" title="Enviado">done</span>
                       ))}
                     </div>
                     {msgReaction && (
-                      <button onClick={() => handleToggleReaction(msg.id, msgReaction)} className={`absolute -bottom-2 ${isUser ? 'left-2' : 'right-2'} px-1.5 py-0.5 rounded-full text-[11px] shadow-elevation-md flex items-center gap-1 ${isLight ? 'bg-white border border-[#ffe0ec]' : 'bg-[#0f1a2e] border border-[#ec4d86]/40'}`}>
+                      <button onClick={() => handleToggleReaction(msg.id, msgReaction)} className={`absolute -bottom-3 ${isUser ? 'left-2' : 'right-2'} h-6 px-2 rounded-full text-[13px] shadow-elevation-md flex items-center ${isLight ? 'bg-white border border-[#16223b]/8' : 'bg-[#131f36] border border-white/10'}`}>
                         <span>{msgReaction}</span>
                       </button>
                     )}
@@ -1360,9 +1394,9 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               </div>
 
               {activeReactionMenuMsgId === msg.id && (
-                <div className={`mt-1 z-30 p-1.5 rounded-full shadow-2xl flex items-center gap-1 animate-fadeIn border ${isLight ? 'bg-white border-[#ffe0ec]' : 'bg-[#0f1a2e] border-[#ec4d86]/40'} ${isUser ? 'self-end mr-2' : 'self-start ml-2'}`}>
+                <div className={`mt-2 z-30 p-1 rounded-full shadow-2xl flex items-center gap-0.5 animate-fadeIn border ${isLight ? 'bg-white border-[#16223b]/8' : 'bg-[#131f36] border-white/10'} ${isUser ? 'self-end mr-1' : 'self-start ml-1'}`}>
                   {['👍', '❤️', '😂', '😮', '😢', '🙏', '☕', '🔥'].map((emoji) => (
-                    <button key={emoji} onClick={() => handleToggleReaction(msg.id, emoji)} className="p-1 text-[15px] hover:scale-125 transition-transform rounded-full hover:bg-black/5 dark:hover:bg-white/10">
+                    <button key={emoji} onClick={() => handleToggleReaction(msg.id, emoji)} className={`w-9 h-9 flex items-center justify-center text-[19px] hover:scale-125 transition-transform rounded-full ${isLight ? 'hover:bg-black/5' : 'hover:bg-white/10'}`}>
                       {emoji}
                     </button>
                   ))}
@@ -1370,21 +1404,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               )}
 
               {activeOptionsMenuMsgId === msg.id && (
-                <div className={`mt-1 z-30 p-1.5 rounded-2xl shadow-2xl flex flex-col gap-1 animate-fadeIn border text-[11px] font-medium ${isLight ? 'bg-white border-[#ffe0ec] text-[#16223b]' : 'bg-[#0f1a2e] border-[#ec4d86]/40 text-[#f5f1e8]'} ${isUser ? 'self-end mr-2' : 'self-start ml-2'}`}>
+                <div className={`mt-1.5 z-30 p-1.5 min-w-[180px] rounded-2xl shadow-2xl flex flex-col animate-fadeIn border text-[13.5px] font-medium ${isLight ? 'bg-white border-[#16223b]/8 text-[#16223b]' : 'bg-[#131f36] border-white/10 text-[#f5f1e8]'} ${isUser ? 'self-end mr-1' : 'self-start ml-1'}`}>
                   <button
                     onClick={() => { setReplyingTo(msg); setActiveOptionsMenuMsgId(null); sounds.playClick(); inputRef.current?.focus(); }}
-                    className="px-2.5 py-1 text-left rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1.5"
+                    className={`h-10 px-3 text-left rounded-xl flex items-center gap-3 ${isLight ? 'hover:bg-[#fcf9f2]' : 'hover:bg-white/8'}`}
                   >
-                    <span className="material-symbols-outlined text-[14px]">reply</span>
+                    <span className="material-symbols-outlined text-[18px] text-[#ec4d86]">reply</span>
                     <span>Responder</span>
                   </button>
-                  <button onClick={() => handleToggleStar(msg.id)} className="px-2.5 py-1 text-left rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[14px]">{isStarred ? 'star_half' : 'star'}</span>
+                  <button onClick={() => handleToggleStar(msg.id)} className={`h-10 px-3 text-left rounded-xl flex items-center gap-3 ${isLight ? 'hover:bg-[#fcf9f2]' : 'hover:bg-white/8'}`}>
+                    <span className="material-symbols-outlined text-[18px] text-[#ec4d86]">{isStarred ? 'star_half' : 'star'}</span>
                     <span>{isStarred ? 'Quitar estrella' : 'Destacar'}</span>
                   </button>
                   {!sticker && !gif && !isImage && (
-                    <button onClick={() => { navigator.clipboard.writeText(msg.body); setActiveOptionsMenuMsgId(null); sounds.playClick(); }} className="px-2.5 py-1 text-left rounded-lg hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px]">content_copy</span>
+                    <button onClick={() => { navigator.clipboard.writeText(msg.body); setActiveOptionsMenuMsgId(null); sounds.playClick(); }} className={`h-10 px-3 text-left rounded-xl flex items-center gap-3 ${isLight ? 'hover:bg-[#fcf9f2]' : 'hover:bg-white/8'}`}>
+                      <span className="material-symbols-outlined text-[18px] text-[#ec4d86]">content_copy</span>
                       <span>Copiar texto</span>
                     </button>
                   )}
@@ -1405,15 +1439,15 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
         )}
 
         {isPartnerTyping && (
-          <div className="flex items-end gap-1.5 self-start animate-fadeIn">
-            <Avatar className="w-7 h-7 border border-[#ec4d86]/30">
+          <div className="flex items-end gap-1.5 self-start mt-3 animate-fadeIn">
+            <Avatar className="w-7 h-7">
               <AvatarImage src={partner.photos[0]?.url} alt={partner.displayName} />
               <AvatarFallback>{partner.displayName.slice(0, 2)}</AvatarFallback>
             </Avatar>
-            <div className={`px-3 py-2 rounded-[20px] flex items-center gap-1 shadow-elevation-sm border ${isLight ? 'bg-white border-[#ffe0ec]' : 'bg-[#2e5570] border-[#ec4d86]/20'}`}>
-              <span className="w-1.5 h-1.5 bg-[#ec4d86] rounded-full animate-bounce [animation-delay:-0.3s]" />
-              <span className="w-1.5 h-1.5 bg-[#ff6b9e] rounded-full animate-bounce [animation-delay:-0.15s]" />
-              <span className="w-1.5 h-1.5 bg-[#ec4d86] rounded-full animate-bounce" />
+            <div className={`h-10 px-4 rounded-[18px] rounded-bl-[6px] flex items-center gap-1 ${getPartnerBubbleClass()}`}>
+              <span className="w-2 h-2 bg-[#ec4d86] rounded-full animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-2 h-2 bg-[#ff6b9e] rounded-full animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-2 h-2 bg-[#ec4d86] rounded-full animate-bounce" />
             </div>
           </div>
         )}
@@ -1440,62 +1474,49 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
       {/* Attachment menu */}
       {showAttachmentMenu && (
-        <div className={`border-t p-3.5 grid grid-cols-3 gap-3 animate-fadeIn relative z-20 shrink-0 ${isLight ? 'bg-white border-[#ffe0ec]' : 'bg-[#0f1a2e] border-[#ec4d86]/30'}`}>
-          <button onClick={() => photoInputRef.current?.click()} className="flex flex-col items-center gap-1 text-center group">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] text-white flex items-center justify-center shadow-elevation-md group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-[22px]">image</span>
-            </div>
-            <span className={`text-[11px] font-medium ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Fotos</span>
-          </button>
-          <button onClick={() => { setShowAttachmentMenu(false); onOpenProposeModal?.(activeMatch.id); }} className="flex flex-col items-center gap-1 text-center group">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] text-white flex items-center justify-center shadow-elevation-md group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-[22px]">local_cafe</span>
-            </div>
-            <span className={`text-[11px] font-medium ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Cita FINDY</span>
-          </button>
-          {onOpenIcebreaker && (
-            <button onClick={() => { setShowAttachmentMenu(false); onOpenIcebreaker(partner.displayName); }} className="flex flex-col items-center gap-1 text-center group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-elevation-md group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[22px]">casino</span>
+        <div className={`border-t px-4 py-4 grid grid-cols-4 gap-2 animate-fadeIn relative z-20 shrink-0 ${isLight ? 'bg-white border-[#16223b]/8' : 'bg-[#0f1a2e] border-white/8'}`}>
+          {[
+            { icon: 'image', label: 'Foto', onClick: () => photoInputRef.current?.click() },
+            { icon: 'local_cafe', label: 'Cita', onClick: () => { setShowAttachmentMenu(false); onOpenProposeModal?.(activeMatch.id); } },
+            ...(onOpenIcebreaker ? [{ icon: 'casino', label: 'Ruleta', onClick: () => { setShowAttachmentMenu(false); onOpenIcebreaker(partner.displayName); } }] : []),
+            { icon: 'auto_awesome', label: 'Stickers', onClick: () => { setShowAttachmentMenu(false); setActiveMediaTray('stickers'); } },
+          ].map((item) => (
+            <button key={item.label} onClick={item.onClick} className="flex flex-col items-center gap-1.5 text-center group py-1">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-active:scale-95 ${isLight ? 'bg-[#ec4d86]/10 text-[#ec4d86]' : 'bg-[#ec4d86]/15 text-[#ffa3c4]'}`}>
+                <span className="material-symbols-outlined text-[26px]">{item.icon}</span>
               </div>
-              <span className={`text-[11px] font-medium ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Ruleta 🎲</span>
+              <span className={`text-[12px] font-semibold ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>{item.label}</span>
             </button>
-          )}
-          <button onClick={() => { setShowAttachmentMenu(false); setActiveMediaTray('stickers'); }} className="flex flex-col items-center gap-1 text-center group">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-600 text-white flex items-center justify-center shadow-elevation-md group-hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
-            </div>
-            <span className={`text-[11px] font-medium ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>Stickers</span>
-          </button>
+          ))}
         </div>
       )}
 
       {/* Media tray */}
       {activeMediaTray && (
-        <div className={`border-t flex flex-col h-64 max-h-[45dvh] animate-fadeIn relative z-20 shrink-0 ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0f1a2e] border-[#ec4d86]/30'}`}>
-          <div className={`px-3 py-1.5 border-b flex items-center justify-between shrink-0 ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#131f36]'}`}>
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className={`border-t flex flex-col h-72 max-h-[45dvh] animate-fadeIn relative z-20 shrink-0 ${isLight ? 'bg-[#fcf9f2] border-[#16223b]/8' : 'bg-[#0f1a2e] border-white/8'}`}>
+          <div className={`pl-3 pr-1.5 py-2 border-b flex items-center justify-between shrink-0 ${isLight ? 'bg-[#fcf9f2] border-[#16223b]/6' : 'bg-[#0f1a2e] border-white/6'}`}>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
               {(['sparks', 'emojis', 'stickers', 'gifs'] as const).map((tab) => (
                 <Button
                   key={tab}
                   variant="tertiary"
                   size="sm"
                   onClick={() => setActiveMediaTray(tab)}
-                  className={`h-7 px-3 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0 ${activeMediaTray === tab ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white shadow-elevation-sm' : isLight ? 'text-gray-600' : 'text-gray-300'}`}
+                  className={`h-9 px-3.5 rounded-full text-[12.5px] font-semibold flex items-center gap-1.5 shrink-0 ${activeMediaTray === tab ? 'bg-[#ec4d86] text-white shadow-elevation-sm' : isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}
                 >
-                  <span>{tab === 'sparks' ? '💡' : tab === 'emojis' ? '😊' : tab === 'stickers' ? '👾' : '🎬'}</span>
+                  <span className="material-symbols-outlined text-[17px]">{tab === 'sparks' ? 'lightbulb' : tab === 'emojis' ? 'mood' : tab === 'stickers' ? 'auto_awesome' : 'gif_box'}</span>
                   <span>{tab === 'sparks' ? 'Ideas' : tab === 'emojis' ? 'Emojis' : tab === 'stickers' ? 'Stickers' : 'GIFs'}</span>
                 </Button>
               ))}
             </div>
-            <div className="flex items-center gap-0.5 shrink-0">
+            <div className="flex items-center shrink-0">
               {activeMediaTray === 'emojis' && (
-                <Button variant="tertiary" size="icon" onClick={handleBackspaceEmoji} className="h-8 w-8 rounded-full text-[#5b6478] dark:text-[#a9b2c9]" aria-label="Borrar último carácter">
-                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">backspace</span>
+                <Button variant="tertiary" size="icon" onClick={handleBackspaceEmoji} className={`h-10 w-10 rounded-full ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`} aria-label="Borrar último carácter">
+                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">backspace</span>
                 </Button>
               )}
-              <Button variant="tertiary" size="icon" onClick={() => setActiveMediaTray(null)} className="h-8 w-8 rounded-full text-[#5b6478] dark:text-[#a9b2c9]" aria-label="Cerrar">
-                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
+              <Button variant="tertiary" size="icon" onClick={() => setActiveMediaTray(null)} className={`h-10 w-10 rounded-full ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`} aria-label="Cerrar">
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </Button>
             </div>
           </div>
@@ -1507,8 +1528,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   key={idx}
                   type="button"
                   onClick={() => { sounds.playClick(); sendMessage.mutate({ body: spark }); setActiveMediaTray(null); }}
-                  className={`px-3 py-2 border rounded-2xl text-[12.5px] font-body-sm text-left transition-colors ${
-                    isLight ? 'bg-white border-[#ffe0ec] text-[#2e5570] hover:border-[#ec4d86] hover:text-[#ec4d86]' : 'bg-[#0a1120] border-[#ec4d86]/25 text-[#ffa3c4] hover:border-[#ec4d86]/60'
+                  className={`min-h-[44px] px-4 py-2.5 border rounded-2xl text-[13.5px] text-left transition-colors ${
+                    isLight ? 'bg-white border-[#16223b]/8 text-[#16223b] hover:border-[#ec4d86]' : 'bg-[#131f36] border-white/8 text-[#f5f1e8] hover:border-[#ec4d86]/60'
                   }`}
                 >
                   {spark}
@@ -1519,10 +1540,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
           {activeMediaTray === 'stickers' && (
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto no-scrollbar border-b border-black/5 dark:border-white/5 shrink-0">
+              <div className={`flex items-center gap-1.5 px-3 py-2 overflow-x-auto no-scrollbar border-b shrink-0 ${isLight ? 'border-[#16223b]/6' : 'border-white/6'}`}>
                 <button
                   onClick={() => setSelectedStickerPackId('favorites')}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 border transition-all ${selectedStickerPackId === 'favorites' ? 'bg-[#ec4d86] text-white border-[#ec4d86]' : isLight ? 'bg-white border-[#ffe0ec] text-gray-700' : 'bg-[#131f36] border-[#ec4d86]/30 text-gray-300'}`}
+                  className={`h-8 px-3 rounded-full text-[11.5px] font-semibold shrink-0 transition-all ${selectedStickerPackId === 'favorites' ? 'bg-[#ec4d86] text-white' : isLight ? 'bg-white text-[#5b6478]' : 'bg-[#131f36] text-[#a9b2c9]'}`}
                 >
                   ⭐ Favoritos ({favoriteStickers.length})
                 </button>
@@ -1530,24 +1551,23 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   <button
                     key={pack.id}
                     onClick={() => setSelectedStickerPackId(pack.id)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 border transition-all ${selectedStickerPackId === pack.id ? 'bg-[#ec4d86] text-white border-[#ec4d86]' : isLight ? 'bg-white border-[#ffe0ec] text-gray-700' : 'bg-[#131f36] border-[#ec4d86]/30 text-gray-300'}`}
+                    className={`h-8 px-3 rounded-full text-[11.5px] font-semibold shrink-0 transition-all ${selectedStickerPackId === pack.id ? 'bg-[#ec4d86] text-white' : isLight ? 'bg-white text-[#5b6478]' : 'bg-[#131f36] text-[#a9b2c9]'}`}
                   >
                     {pack.icon} {pack.name}
                   </button>
                 ))}
               </div>
               <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5">
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                   {(selectedStickerPackId === 'favorites' ? favoriteStickers : currentPack.stickers).map((sticker) => (
                     <button
                       key={sticker.id}
                       onClick={() => handleSendSticker(sticker)}
-                      className="flex flex-col items-center p-2 rounded-2xl border transition-all hover:scale-110 active:scale-95 group relative shadow-elevation-sm"
-                      style={{ background: isLight ? '#ffffff' : '#131f36', borderColor: isLight ? '#ffe0ec' : 'rgba(225,29,72,0.25)' }}
+                      className={`flex flex-col items-center p-2 rounded-2xl transition-all hover:scale-105 active:scale-95 group relative ${isLight ? 'bg-white shadow-elevation-sm' : 'bg-[#131f36]'}`}
                       title={`Enviar ${sticker.title}`}
                     >
-                      <span className="text-3xl select-none group-hover:scale-110 transition-transform">{sticker.emoji}</span>
-                      <span className="text-[9px] font-bold text-[#ec4d86] uppercase tracking-wider mt-1 truncate max-w-full">{sticker.badgeText || sticker.title}</span>
+                      <span className="text-[34px] leading-none py-1 select-none group-hover:scale-110 transition-transform">{sticker.emoji}</span>
+                      <span className="text-[9.5px] font-bold text-[#ec4d86] uppercase tracking-wider mt-1 truncate max-w-full">{sticker.badgeText || sticker.title}</span>
                     </button>
                   ))}
                 </div>
@@ -1558,13 +1578,13 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           {activeMediaTray === 'emojis' && (
             <div className="flex-1 overflow-y-auto p-3 no-scrollbar space-y-3">
               <div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider block mb-1.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>Recientes</span>
-                <div className="flex flex-wrap gap-1.5">
+                <span className={`text-[10.5px] font-bold uppercase tracking-[0.12em] block mb-1.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>Recientes</span>
+                <div className="flex flex-wrap gap-1">
                   {(recentEmojis.length > 0 ? recentEmojis : DEFAULT_FREQUENT_EMOJIS).map((emoji, i) => (
                     <button
                       key={`recent-${i}`}
                       onClick={() => handleInsertEmoji(emoji)}
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center text-[18px] hover:scale-125 transition-transform bg-white dark:bg-[#131f36] border-[#ffe0ec] dark:border-[#ec4d86]/20"
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-[22px] hover:scale-125 transition-transform ${isLight ? 'hover:bg-white' : 'hover:bg-white/8'}`}
                     >
                       {emoji}
                     </button>
@@ -1573,13 +1593,13 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               </div>
               {EMOJI_CATEGORIES.map((cat) => (
                 <div key={cat.name}>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider block mb-1.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{cat.name}</span>
-                  <div className="flex flex-wrap gap-1.5">
+                  <span className={`text-[10.5px] font-bold uppercase tracking-[0.12em] block mb-1.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{cat.name}</span>
+                  <div className="flex flex-wrap gap-1">
                     {cat.emojis.map((emoji, i) => (
                       <button
                         key={`${cat.name}-${i}`}
                         onClick={() => handleInsertEmoji(emoji)}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-[18px] hover:scale-125 transition-transform bg-white dark:bg-[#131f36] border-[#ffe0ec] dark:border-[#ec4d86]/20"
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-[22px] hover:scale-125 transition-transform ${isLight ? 'hover:bg-white' : 'hover:bg-white/8'}`}
                       >
                         {emoji}
                       </button>
@@ -1593,9 +1613,9 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           {activeMediaTray === 'gifs' && (
             <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 no-scrollbar">
               {QUICK_GIFS.map((gif) => (
-                <div key={gif.id} onClick={() => handleSendGif(gif)} className="rounded-2xl overflow-hidden border border-[#ffe0ec] dark:border-[#ec4d86]/30 cursor-pointer group relative shadow-elevation-md">
-                  <img src={gif.url} alt={gif.title} loading="lazy" decoding="async" className="w-full h-24 object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
-                  <div className="absolute bottom-0 inset-x-0 p-1 bg-gradient-to-t from-black/80 to-transparent text-white text-[10px] font-bold truncate text-center">{gif.tag}</div>
+                <div key={gif.id} onClick={() => handleSendGif(gif)} className="rounded-2xl overflow-hidden cursor-pointer group relative shadow-elevation-sm">
+                  <img src={gif.url} alt={gif.title} loading="lazy" decoding="async" className="w-full h-28 object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                  <div className="absolute bottom-0 inset-x-0 px-2 pt-5 pb-1.5 bg-gradient-to-t from-black/80 to-transparent text-white text-[11.5px] font-bold truncate">{gif.tag}</div>
                 </div>
               ))}
             </div>
@@ -1606,32 +1626,33 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       {/* Proponer cita + icebreakers — del diseño Premium aprobado: en vez de esconder
           "proponer cita" solo en el header/menú de adjuntos, y las ideas de conversación
           solo en la bandeja "Ideas", se muestra un atajo persistente arriba del input
-          (igual que Conversation.dc.html), sin sacar los accesos que ya existían. */}
+          (igual que Conversation.dc.html), sin sacar los accesos que ya existían.
+          Va todo en una sola fila de chips: el atajo de cita primero (relleno) y
+          las ideas después (contorno) — antes el botón de cita ocupaba una fila
+          entera y sumaba ~50px de altura al composer. */}
       {!activeMediaTray && !showAttachmentMenu && !inChatSearchOpen && (
-        <div className="shrink-0 flex flex-col gap-2 px-3 pt-2 relative z-10">
-          {/* Jerarquía única: con el chat vacío, la tarjeta de punto de partida
-              ya ofrece plan + pregunta; este atajo solo aparece cuando hay
-              conversación (donde la tarjeta ya no está). */}
-          {onOpenProposeModal && filteredMessages.length > 0 && (
-            <button
-              type="button"
-              onClick={() => { sounds.playStamp(); onOpenProposeModal(activeMatch.id); }}
-              className={`flex items-center justify-center gap-1.5 h-9 rounded-full border-[1.5px] text-[12.5px] font-bold transition-colors ${
-                isLight ? 'border-[#ec4d86] text-[#ec4d86] hover:bg-[#ec4d86]/5' : 'border-[#ec4d86] text-[#ffa3c4] hover:bg-white/5'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">local_cafe</span>
-              Proponer cita
-            </button>
-          )}
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+        <div className="shrink-0 relative z-10">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 pt-2 pb-1">
+            {/* Jerarquía única: con el chat vacío, la tarjeta de punto de partida
+                ya ofrece plan + pregunta; este atajo solo aparece cuando hay
+                conversación (donde la tarjeta ya no está). */}
+            {onOpenProposeModal && filteredMessages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { sounds.playStamp(); onOpenProposeModal(activeMatch.id); }}
+                className="shrink-0 inline-flex items-center gap-1.5 h-9 pl-3 pr-3.5 rounded-full bg-[#ec4d86] text-white text-[12.5px] font-bold whitespace-nowrap shadow-elevation-sm active:scale-95 transition-transform"
+              >
+                <span className="material-symbols-outlined text-[17px]">local_cafe</span>
+                Proponer cita
+              </button>
+            )}
             {conversationSparkChips.map((spark, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => { sounds.playClick(); setInputText(spark); inputRef.current?.focus(); }}
-                className={`shrink-0 h-[30px] px-3 rounded-full border text-[11.5px] font-semibold whitespace-nowrap transition-colors ${
-                  isLight ? 'bg-white border-[#ffe0ec] text-[#ec4d86]' : 'bg-[#131f36] border-[#ec4d86]/25 text-[#ffa3c4]'
+                className={`shrink-0 h-9 px-3.5 rounded-full border text-[12.5px] font-medium whitespace-nowrap transition-colors active:scale-95 ${
+                  isLight ? 'bg-white border-[#16223b]/10 text-[#16223b]' : 'bg-[#131f36] border-white/10 text-[#f5f1e8]'
                 }`}
               >
                 {spark}
@@ -1645,41 +1666,41 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           composer quedaba pegado al borde en iPhones con Face ID. */}
       <div
         style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
-        className={`border-t px-2 pt-2 relative z-30 shrink-0 liquid-glass ${isLight ? 'bg-white/55 border-[#ffe0ec]/60' : 'bg-[#0f1a2e]/55 border-[#ec4d86]/20'}`}
+        className={`px-3 pt-2 relative z-30 shrink-0 ${isLight ? 'bg-[#efe7d8]' : 'bg-[#0a1120]'}`}
       >
         {replyingTo && (
-          <div className={`flex items-center gap-2 mb-1.5 pl-3 pr-1.5 py-1.5 rounded-2xl border-l-4 border animate-fadeIn ${
-            isLight ? 'bg-white border-l-[#ec4d86] border-[#ffe0ec]' : 'bg-[#131f36] border-l-[#ec4d86] border-[#ec4d86]/25'
+          <div className={`flex items-center gap-2 mb-2 pl-3 pr-1.5 py-2 rounded-2xl border-l-[3px] animate-fadeIn ${
+            isLight ? 'bg-white border-l-[#ec4d86] shadow-elevation-sm' : 'bg-[#131f36] border-l-[#ec4d86]'
           }`}>
             <div className="flex-1 min-w-0">
-              <span className="block text-[10.5px] font-bold text-[#ec4d86]">
+              <span className="block text-[11.5px] font-bold text-[#ec4d86]">
                 Respondiendo a {replyingTo.senderId === user?.id ? 'vos' : partner.displayName}
               </span>
-              <span className={`block text-[12px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+              <span className={`block text-[13px] truncate ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
                 {replyingTo.type === 'IMAGE' ? '📷 Foto' : replyingTo.body}
               </span>
             </div>
             <button
               type="button"
               onClick={() => { setReplyingTo(null); sounds.playClick(); }}
-              className={`h-7 w-7 shrink-0 flex items-center justify-center rounded-full ${isLight ? 'text-[#5b6478] hover:text-[#ec4d86] hover:bg-[#fcf9f2]' : 'text-[#a9b2c9] hover:text-[#ffa3c4] hover:bg-white/5'}`}
+              className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-full ${isLight ? 'text-[#5b6478] hover:text-[#ec4d86] hover:bg-[#fcf9f2]' : 'text-[#a9b2c9] hover:text-[#ffa3c4] hover:bg-white/5'}`}
               aria-label="Cancelar respuesta"
               title="Cancelar respuesta"
             >
-              <span className="material-symbols-outlined text-[16px]">close</span>
+              <span className="material-symbols-outlined text-[18px]">close</span>
             </button>
           </div>
         )}
-        <form onSubmit={handleSendText} className="flex items-center gap-1.5" autoComplete="off">
-          <div className={`flex-1 flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-elevation-sm transition-colors ${isLight ? 'bg-white border-[#ffe0ec] focus-within:border-[#ec4d86]' : 'bg-[#131f36] border-[#ec4d86]/30 focus-within:border-[#ffa3c4]'}`}>
+        <form onSubmit={handleSendText} className="flex items-center gap-2" autoComplete="off">
+          <div className={`flex-1 flex items-center gap-0.5 pl-1 pr-1 h-12 rounded-full border transition-colors ${isLight ? 'bg-white border-[#16223b]/10 focus-within:border-[#ec4d86] shadow-elevation-sm' : 'bg-[#131f36] border-white/10 focus-within:border-[#ec4d86]/70'}`}>
             <button
               type="button"
               onClick={() => { sounds.playClick(); setActiveMediaTray(activeMediaTray ? null : 'stickers'); setShowAttachmentMenu(false); }}
-              className={`tap-target w-11 h-11 -m-1.5 flex items-center justify-center rounded-full text-[#5b6478] hover:text-[#ec4d86] transition-colors ${activeMediaTray ? 'text-[#ec4d86]' : ''}`}
+              className={`tap-target w-10 h-10 flex items-center justify-center rounded-full transition-colors ${activeMediaTray ? 'text-[#ec4d86]' : isLight ? 'text-[#5b6478] hover:text-[#ec4d86]' : 'text-[#a9b2c9] hover:text-[#ffa3c4]'}`}
               title="Stickers y Emojis"
               aria-label={activeMediaTray ? 'Cerrar stickers' : 'Abrir stickers y emojis'}
             >
-              <span className="material-symbols-outlined text-[21px] block">{activeMediaTray ? 'keyboard' : 'sentiment_satisfied'}</span>
+              <span className="material-symbols-outlined text-[24px] block">{activeMediaTray ? 'keyboard' : 'sentiment_satisfied'}</span>
             </button>
             <input
               ref={inputRef}
@@ -1687,36 +1708,36 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               value={inputText}
               onChange={(e) => { setInputText(e.target.value); pingTyping(); }}
               onFocus={() => { if (activeMediaTray) setActiveMediaTray(null); }}
-              placeholder="Mensaje"
+              placeholder="Escribí un mensaje"
               // Teclado móvil: la tecla Enter dice "enviar" y lo envía.
               enterKeyHint="send"
               aria-label={`Mensaje para ${partner.displayName}`}
               autoComplete="off"
               autoCorrect="on"
-              className={`flex-1 bg-transparent text-[13px] font-body-sm focus:outline-none ${isLight ? 'text-[#16223b] placeholder:text-[#5b6478]/70' : 'text-[#f5f1e8] placeholder:text-[#a9b2c9]/70'}`}
+              className={`flex-1 min-w-0 h-full bg-transparent text-[15px] px-1 focus:outline-none ${isLight ? 'text-[#16223b] placeholder:text-[#5b6478]/70' : 'text-[#f5f1e8] placeholder:text-[#a9b2c9]/70'}`}
             />
             <button
               type="button"
               onClick={() => { sounds.playClick(); setShowAttachmentMenu(!showAttachmentMenu); setActiveMediaTray(null); }}
-              className={`tap-target w-11 h-11 -m-1.5 flex items-center justify-center rounded-full text-[#5b6478] hover:text-[#ec4d86] transition-colors ${showAttachmentMenu ? 'text-[#ec4d86]' : ''}`}
+              className={`tap-target w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showAttachmentMenu ? 'text-[#ec4d86]' : isLight ? 'text-[#5b6478] hover:text-[#ec4d86]' : 'text-[#a9b2c9] hover:text-[#ffa3c4]'}`}
               title="Adjuntar"
               aria-label={showAttachmentMenu ? 'Cerrar adjuntos' : 'Adjuntar foto o plan'}
             >
-              <span className="material-symbols-outlined text-[20px] block">attach_file</span>
+              <span className="material-symbols-outlined text-[22px] block">add_circle</span>
             </button>
           </div>
 
           <button
             type="submit"
             disabled={!inputText.trim() || sendMessage.isPending}
-            className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] text-white flex items-center justify-center tactile-btn shadow-elevation-md hover:brightness-105 transition-transform active:scale-95 shrink-0 disabled:opacity-40"
+            className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] text-white flex items-center justify-center tactile-btn shadow-elevation-md hover:brightness-105 transition-all active:scale-95 shrink-0 disabled:opacity-40 disabled:shadow-none"
             title="Enviar mensaje"
             aria-label={sendMessage.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
           >
             {sendMessage.isPending ? (
-              <span className="material-symbols-outlined text-[19px] animate-spin">progress_activity</span>
+              <span className="material-symbols-outlined text-[22px] animate-spin">progress_activity</span>
             ) : (
-              <span className="material-symbols-outlined text-[19px]" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+              <span className="material-symbols-outlined text-[22px] translate-x-px" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
             )}
           </button>
         </form>
@@ -1725,20 +1746,20 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       {/* Sticker detail modal */}
       {selectedStickerDetail && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className={`w-full max-w-xs rounded-3xl p-5 border shadow-2xl flex flex-col items-center text-center animate-scaleUp ${isLight ? 'bg-white border-[#ffe0ec] text-[#16223b]' : 'bg-[#0f1a2e] border-[#ec4d86]/40 text-[#f5f1e8]'}`}>
-            <div className="w-28 h-28 rounded-3xl bg-white dark:bg-[#131f36] border-2 border-[#ec4d86]/40 shadow-xl flex items-center justify-center text-6xl mb-3">
+          <div className={`w-full max-w-xs rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center animate-scaleUp ${isLight ? 'bg-white text-[#16223b]' : 'bg-[#131f36] text-[#f5f1e8]'}`}>
+            <div className={`w-32 h-32 rounded-3xl flex items-center justify-center text-[64px] mb-4 ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#1f2e4c]'}`}>
               {selectedStickerDetail.emoji}
             </div>
-            <h3 className="font-headline-md text-[16px] font-bold mb-3">{selectedStickerDetail.title}</h3>
+            <h3 className="text-[18px] font-bold mb-4">{selectedStickerDetail.title}</h3>
             <div className="flex flex-col gap-2 w-full">
-              <Button onClick={() => { handleSendSticker(selectedStickerDetail); setSelectedStickerDetail(null); }} className="w-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-9 rounded-2xl shadow-elevation-md">
-                Enviar Sticker al chat
+              <Button onClick={() => { handleSendSticker(selectedStickerDetail); setSelectedStickerDetail(null); }} className="w-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-11 rounded-2xl text-[14px] shadow-elevation-md">
+                Enviar al chat
               </Button>
-              <Button variant="secondary" onClick={() => handleToggleFavoriteSticker(selectedStickerDetail.id)} className="w-full h-9 rounded-2xl flex items-center justify-center gap-1.5 text-[12px]">
-                <span className="material-symbols-outlined text-[16px] text-amber-500">{favoriteStickerIds.includes(selectedStickerDetail.id) ? 'star' : 'star_border'}</span>
-                <span>{favoriteStickerIds.includes(selectedStickerDetail.id) ? 'Quitar de Favoritos' : 'Añadir a Favoritos'}</span>
+              <Button variant="secondary" onClick={() => handleToggleFavoriteSticker(selectedStickerDetail.id)} className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 text-[13.5px]">
+                <span className="material-symbols-outlined text-[18px] text-amber-500" style={{ fontVariationSettings: favoriteStickerIds.includes(selectedStickerDetail.id) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                <span>{favoriteStickerIds.includes(selectedStickerDetail.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}</span>
               </Button>
-              <Button variant="tertiary" onClick={() => setSelectedStickerDetail(null)} className="w-full h-8 text-[12px] opacity-70">Cerrar</Button>
+              <Button variant="tertiary" onClick={() => setSelectedStickerDetail(null)} className="w-full h-10 text-[13.5px] opacity-70">Cerrar</Button>
             </div>
           </div>
         </div>
@@ -1747,43 +1768,45 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       {/* Contact info drawer */}
       {showContactInfoDrawer && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end animate-fadeIn">
-          <div className={`w-full max-w-sm h-full overflow-y-auto p-5 border-l flex flex-col justify-between animate-slideLeft ${isLight ? 'bg-white border-[#ffe0ec] text-[#16223b]' : 'bg-[#0f1a2e] border-[#ec4d86]/40 text-[#f5f1e8]'}`}>
+          <div className={`w-full max-w-sm h-full overflow-y-auto p-5 flex flex-col justify-between animate-slideLeft ${isLight ? 'bg-white text-[#16223b]' : 'bg-[#0f1a2e] text-[#f5f1e8]'}`} style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top))', paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-headline-md text-[16px] font-bold">Info. del contacto</h3>
-                <Button variant="tertiary" size="icon" onClick={() => setShowContactInfoDrawer(false)} className="rounded-full" aria-label="Cerrar">
-                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-[18px] font-bold">Info del contacto</h3>
+                <Button variant="tertiary" size="icon" onClick={() => setShowContactInfoDrawer(false)} className="h-11 w-11 -mr-2 rounded-full" aria-label="Cerrar">
+                  <span className="material-symbols-outlined text-[22px]" aria-hidden="true">close</span>
                 </Button>
               </div>
               <div className="flex flex-col items-center text-center mb-6">
-                <Avatar className="w-24 h-24 border-2 border-[#ec4d86] shadow-xl mb-3">
-                  <AvatarImage src={partner.photos[0]?.url} alt={partner.displayName} />
-                  <AvatarFallback>{partner.displayName.slice(0, 2)}</AvatarFallback>
-                </Avatar>
+                <div className="w-28 h-28 rounded-full p-[3px] bg-gradient-to-tr from-[#ec4d86] to-[#ff6b9e] shadow-elevation-md mb-3">
+                  <Avatar className="w-full h-full">
+                    <AvatarImage src={partner.photos[0]?.url} alt={partner.displayName} />
+                    <AvatarFallback>{partner.displayName.slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                </div>
                 <div className="flex items-center gap-1.5">
-                  <h2 className="font-headline-md text-xl font-bold">{partner.displayName}, {partner.age}</h2>
-                  {partner.badges.trusted && <span className="material-symbols-outlined text-[#ec4d86] text-[18px]" title="Citas verificadas">verified</span>}
-                  {partner.badges.verified && <span className="material-symbols-outlined text-sky-400 text-[18px]" title="Identidad verificada">verified</span>}
+                  <h2 className="text-[22px] font-bold leading-tight">{partner.displayName}, {partner.age}</h2>
+                  <VerifiedMark badges={partner.badges} size={20} />
                 </div>
-                <p className="text-[11px] text-[#ec4d86] font-bold">{partner.city}</p>
+                <p className={`text-[13px] mt-0.5 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{partner.city}</p>
               </div>
-              <div className={`p-3 rounded-2xl border mb-4 ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#131f36] border-[#ec4d86]/30'}`}>
-                <span className="font-label-caps text-[9px] text-[#ec4d86] font-bold uppercase tracking-wider block mb-1">ESTADO EN FINDY</span>
-                <p className="text-[12.5px] italic">"{partner.bio || 'Sin bio todavía.'}"</p>
+              <div className={`p-4 rounded-2xl mb-3 ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#131f36]'}`}>
+                <span className="text-[10.5px] text-[#ec4d86] font-bold uppercase tracking-[0.12em] block mb-1.5">Estado en Findy</span>
+                <p className="text-[14px] leading-relaxed">"{partner.bio || 'Sin bio todavía.'}"</p>
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                <div className="p-3 rounded-2xl border text-center border-black/10 dark:border-white/10">
-                  <span className="text-xl font-bold text-[#ec4d86] block">{partner.membership.tierLabel}</span>
-                  <span className="text-[10px] uppercase font-bold opacity-70">Membresía</span>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className={`p-4 rounded-2xl text-center ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#131f36]'}`}>
+                  <span className="text-[20px] font-bold text-[#ec4d86] block leading-tight">{partner.membership.tierLabel}</span>
+                  <span className={`text-[10.5px] uppercase tracking-[0.1em] font-bold ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>Membresía</span>
                 </div>
-                <div className="p-3 rounded-2xl border text-center border-black/10 dark:border-white/10">
-                  <span className="text-xl font-bold text-emerald-500 block">{activeMatch.verifiedDateCount}</span>
-                  <span className="text-[10px] uppercase font-bold opacity-70">Citas verificadas</span>
+                <div className={`p-4 rounded-2xl text-center ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#131f36]'}`}>
+                  <span className="text-[20px] font-bold text-emerald-500 block leading-tight">{activeMatch.verifiedDateCount}</span>
+                  <span className={`text-[10.5px] uppercase tracking-[0.1em] font-bold ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>Citas verificadas</span>
                 </div>
               </div>
             </div>
-            <Button onClick={() => { setShowContactInfoDrawer(false); onOpenProposeModal?.(activeMatch.id); }} className="w-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-10 rounded-2xl shadow-elevation-md">
-              Proponer Cita a {partner.displayName}
+            <Button onClick={() => { setShowContactInfoDrawer(false); onOpenProposeModal?.(activeMatch.id); }} className="w-full bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-12 rounded-2xl text-[14px] shadow-elevation-md gap-2">
+              <span className="material-symbols-outlined text-[18px]">local_cafe</span>
+              Proponer cita a {partner.displayName}
             </Button>
           </div>
         </div>
@@ -1792,33 +1815,33 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       {/* Theme customizer */}
       {showThemeCustomizer && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
-          <div className={`w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 border shadow-2xl flex flex-col justify-between animate-scaleUp no-scrollbar ${isLight ? 'bg-white border-[#ffe0ec] text-[#16223b]' : 'bg-[#0f1a2e] border-[#ec4d86]/40 text-[#f5f1e8]'}`}>
+          <div className={`w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl flex flex-col justify-between animate-scaleUp no-scrollbar ${isLight ? 'bg-white text-[#16223b]' : 'bg-[#0f1a2e] text-[#f5f1e8]'}`}>
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
-                <h3 className="font-headline-md text-[16px] font-bold">Personalizar Chat</h3>
-                <Button variant="tertiary" size="icon" onClick={() => setShowThemeCustomizer(false)} className="rounded-full h-8 w-8" aria-label="Cerrar">
-                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+              <div className={`flex items-center justify-between pb-3 border-b mb-4 ${isLight ? 'border-[#16223b]/8' : 'border-white/10'}`}>
+                <h3 className="text-[18px] font-bold">Personalizar chat</h3>
+                <Button variant="tertiary" size="icon" onClick={() => setShowThemeCustomizer(false)} className="rounded-full h-11 w-11 -mr-2" aria-label="Cerrar">
+                  <span className="material-symbols-outlined text-[22px]" aria-hidden="true">close</span>
                 </Button>
               </div>
 
               <div className="mb-5">
-                <span className="font-label-caps text-[10px] uppercase font-bold tracking-wider text-[#ec4d86] block mb-2">VISTA PREVIA EN VIVO</span>
-                <div className="p-3.5 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col gap-2.5 shadow-inner" style={getWallpaperStyle()}>
+                <span className="text-[10.5px] uppercase font-bold tracking-[0.12em] text-[#ec4d86] block mb-2">Vista previa</span>
+                <div className={`p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col gap-2 ${isLight ? 'border-[#16223b]/8' : 'border-white/8'}`} style={getWallpaperStyle()}>
                   <div className="flex justify-start">
-                    <div className={`p-2.5 max-w-[80%] rounded-[20px] ${getPartnerBubbleClass()}`}>
-                      <p className="text-[12px] font-medium leading-tight">¿Qué te parece este color para el chat? ☕</p>
+                    <div className={`px-3.5 py-2 max-w-[80%] rounded-[18px] rounded-bl-[6px] ${getPartnerBubbleClass()}`}>
+                      <p className="text-[13.5px] leading-snug">¿Qué te parece este color para el chat? ☕</p>
                     </div>
                   </div>
                   <div className="flex justify-end">
-                    <div style={customColor ? { backgroundColor: customColor } : undefined} className={`p-2.5 max-w-[80%] rounded-[20px] ${getUserBubbleClass()}`}>
-                      <p className="text-[12px] font-medium leading-tight">¡Me encanta! Queda súper estético ✨</p>
+                    <div style={customColor ? { backgroundColor: customColor } : undefined} className={`px-3.5 py-2 max-w-[80%] rounded-[18px] rounded-br-[6px] ${getUserBubbleClass()}`}>
+                      <p className="text-[13.5px] leading-snug">¡Me encanta! Queda súper estético ✨</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="mb-5">
-                <span className="font-label-caps text-[10px] uppercase font-bold tracking-wider text-[#ec4d86] block mb-2">PALETAS & TEMAS FINDY</span>
+                <span className="text-[10.5px] uppercase font-bold tracking-[0.12em] text-[#ec4d86] block mb-2">Paletas y temas Findy</span>
                 <div className="grid grid-cols-2 gap-2">
                   {CHAT_THEME_PRESETS.map((preset) => {
                     const isSelected = currentTheme.id === preset.id && !customColor;
@@ -1834,19 +1857,19 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                           }
                           handleApplyTheme(preset.id);
                         }}
-                        className={`p-2.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between gap-1.5 ${
-                          isSelected ? isLight ? 'border-[#ec4d86] bg-[#fcf9f2] ring-2 ring-[#ec4d86]/30' : 'border-[#ec4d86] bg-[#17233d] ring-2 ring-[#ec4d86]/40' : isLight ? 'border-gray-200 bg-gray-50/50' : 'border-white/10 bg-white/5'
+                        className={`p-3 min-h-[60px] rounded-2xl border text-left transition-all relative flex flex-col justify-between gap-1 ${
+                          isSelected ? 'border-[#ec4d86] bg-[#ec4d86]/8' : isLight ? 'border-[#16223b]/8 bg-[#fcf9f2]' : 'border-white/8 bg-white/5'
                         }`}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <span className={`text-[11px] font-bold truncate ${isLocked ? 'opacity-60' : ''}`}>{preset.previewBadge}</span>
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span className={`text-[12.5px] font-bold truncate ${isLocked ? 'opacity-60' : ''}`}>{preset.previewBadge}</span>
                           {isLocked ? (
-                            <span className="material-symbols-outlined text-[14px] shrink-0 text-[#d9b45c]" aria-label="Exclusivo Black">lock</span>
+                            <span className="material-symbols-outlined text-[16px] shrink-0 text-[#d9b45c]" aria-label="Exclusivo Black">lock</span>
                           ) : (
-                            <span className="w-3.5 h-3.5 rounded-full border border-white/50 shadow-elevation-sm shrink-0" style={{ backgroundColor: preset.accentColor }} />
+                            <span className={`w-4 h-4 rounded-full shrink-0 ${isSelected ? 'ring-2 ring-[#ec4d86] ring-offset-2' : ''} ${isLight ? 'ring-offset-white' : 'ring-offset-[#0f1a2e]'}`} style={{ backgroundColor: preset.accentColor }} />
                           )}
                         </div>
-                        <p className="text-[10px] opacity-75 line-clamp-1">{preset.description}</p>
+                        <p className={`text-[11px] line-clamp-1 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>{preset.description}</p>
                       </button>
                     );
                   })}
@@ -1854,8 +1877,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               </div>
 
               <div className="mb-5">
-                <span className="font-label-caps text-[10px] uppercase font-bold tracking-wider text-[#ec4d86] block mb-2">TEXTURA Y PATRÓN DE FONDO</span>
-                <div className="grid grid-cols-5 gap-1.5">
+                <span className="text-[10.5px] uppercase font-bold tracking-[0.12em] text-[#ec4d86] block mb-2">Patrón de fondo</span>
+                <div className="grid grid-cols-5 gap-2">
                   {[
                     { id: 'dots', label: 'Puntos', icon: 'blur_on' },
                     { id: 'grid', label: 'Cuadrícula', icon: 'grid_view' },
@@ -1866,40 +1889,41 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     <button
                       key={pat.id}
                       onClick={() => handleApplyPattern(pat.id as 'dots' | 'grid' | 'stars' | 'clean' | 'warm')}
-                      className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all text-center ${
-                        customPattern === pat.id ? 'border-[#ec4d86] bg-[#ec4d86]/10 text-[#ec4d86] font-bold' : 'border-black/10 dark:border-white/10 opacity-70'
+                      className={`min-h-[60px] p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all text-center ${
+                        customPattern === pat.id ? 'border-[#ec4d86] bg-[#ec4d86]/8 text-[#ec4d86] font-bold' : isLight ? 'border-[#16223b]/8 text-[#5b6478]' : 'border-white/8 text-[#a9b2c9]'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[18px]">{pat.icon}</span>
-                      <span className="text-[9.5px] truncate">{pat.label}</span>
+                      <span className="material-symbols-outlined text-[20px]">{pat.icon}</span>
+                      <span className="text-[10px] truncate max-w-full">{pat.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="mb-4">
-                <span className="font-label-caps text-[10px] uppercase font-bold tracking-wider text-[#ec4d86] block mb-2">COLOR PERSONALIZADO DE BURBUJAS</span>
-                <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10.5px] uppercase font-bold tracking-[0.12em] text-[#ec4d86] block mb-2">Color de tus burbujas</span>
+                <div className="flex items-center gap-2.5 flex-wrap">
                   {['#ec4d86', '#c9366d', '#b98fd1', '#b98fd1', '#3f7a5c', '#2e5570', '#2e5570', '#e3b873', '#e3b873', '#ff6b9e', '#2e5570'].map((hex) => (
                     <button
                       key={hex}
                       onClick={() => handleApplyCustomColor(hex)}
-                      className={`w-7 h-7 rounded-full transition-transform border-2 flex items-center justify-center ${customColor.toLowerCase() === hex.toLowerCase() ? 'scale-125 border-white ring-2 ring-[#ec4d86]' : 'border-white/30'}`}
+                      className={`w-9 h-9 rounded-full transition-transform flex items-center justify-center ${customColor.toLowerCase() === hex.toLowerCase() ? 'ring-2 ring-[#ec4d86] ring-offset-2 scale-110' : ''} ${isLight ? 'ring-offset-white' : 'ring-offset-[#0f1a2e]'}`}
                       style={{ backgroundColor: hex }}
                       title={hex}
+                      aria-label={`Color ${hex}`}
                     />
                   ))}
-                  <label className="relative w-7 h-7 rounded-full border-2 border-dashed border-gray-400 hover:border-[#ec4d86] flex items-center justify-center cursor-pointer" title="Elegir color exacto">
-                    <span className="material-symbols-outlined text-[14px] opacity-70">colorize</span>
+                  <label className={`relative w-9 h-9 rounded-full border-2 border-dashed hover:border-[#ec4d86] flex items-center justify-center cursor-pointer ${isLight ? 'border-[#16223b]/25' : 'border-white/30'}`} title="Elegir color exacto">
+                    <span className="material-symbols-outlined text-[16px] opacity-70">colorize</span>
                     <input type="color" value={customColor || currentTheme.accentColor} onChange={(e) => handleApplyCustomColor(e.target.value)} className="sr-only" />
                   </label>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-3 border-t border-black/10 dark:border-white/10 mt-3">
-              <Button variant="secondary" onClick={() => { sounds.playClick(); handleApplyTheme('mely-cherry'); }} className="flex-1 h-9 rounded-2xl text-[11.5px]">Por Defecto</Button>
-              <Button onClick={() => { sounds.playStamp(); setShowThemeCustomizer(false); }} className="flex-1 bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-9 rounded-2xl shadow-elevation-md text-[11.5px]">Aplicar y Guardar</Button>
+            <div className={`flex gap-2 pt-4 border-t mt-2 ${isLight ? 'border-[#16223b]/8' : 'border-white/10'}`}>
+              <Button variant="secondary" onClick={() => { sounds.playClick(); handleApplyTheme('mely-cherry'); }} className="flex-1 h-11 rounded-2xl text-[13.5px] font-bold">Por defecto</Button>
+              <Button onClick={() => { sounds.playStamp(); setShowThemeCustomizer(false); }} className="flex-1 bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-11 rounded-2xl shadow-elevation-md text-[13.5px]">Aplicar y guardar</Button>
             </div>
           </div>
         </div>
@@ -1908,30 +1932,32 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       {/* Consejos de seguridad — del diseño Premium aprobado. */}
       {showSafetyTips && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
-          <div className={`w-full max-w-sm max-h-[85dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 border shadow-2xl animate-scaleUp no-scrollbar ${isLight ? 'bg-white border-[#ffe0ec] text-[#16223b]' : 'bg-[#0f1a2e] border-[#ec4d86]/40 text-[#f5f1e8]'}`}>
+          <div className={`w-full max-w-sm max-h-[85dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl animate-scaleUp no-scrollbar ${isLight ? 'bg-white text-[#16223b]' : 'bg-[#0f1a2e] text-[#f5f1e8]'}`} style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-[#ec4d86]">shield</span>
-                <h3 className="font-headline-md text-[16px] font-bold">Consejos de seguridad</h3>
+              <div className="flex items-center gap-2.5">
+                <span className="w-10 h-10 rounded-xl bg-[#ec4d86]/12 text-[#ec4d86] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[22px]">shield</span>
+                </span>
+                <h3 className="text-[18px] font-bold">Consejos de seguridad</h3>
               </div>
-              <Button variant="tertiary" size="icon" onClick={() => setShowSafetyTips(false)} className="rounded-full h-8 w-8" aria-label="Cerrar">
-                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+              <Button variant="tertiary" size="icon" onClick={() => setShowSafetyTips(false)} className="rounded-full h-11 w-11 -mr-2" aria-label="Cerrar">
+                <span className="material-symbols-outlined text-[22px]" aria-hidden="true">close</span>
               </Button>
             </div>
-            <p className={`text-[12px] mb-4 ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
-              Antes de encontrarte con {partner.displayName}, tené en cuenta estas recomendaciones de FINDY.
+            <p className={`text-[13.5px] leading-relaxed mt-2 mb-4 ${isLight ? 'text-[#5b6478]' : 'text-[#a9b2c9]'}`}>
+              Antes de encontrarte con {partner.displayName}, tené en cuenta estas recomendaciones de Findy.
             </p>
-            <div className="flex flex-col gap-3 mb-2">
+            <div className="flex flex-col gap-3.5 mb-3">
               {SAFETY_TIPS.map((tip, i) => (
-                <div key={i} className="flex items-start gap-2.5">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#131f36]'}`}>
-                    <span className="material-symbols-outlined text-[16px] text-[#ec4d86]">{tip.icon}</span>
+                <div key={i} className="flex items-start gap-3">
+                  <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-[#fcf9f2]' : 'bg-[#131f36]'}`}>
+                    <span className="material-symbols-outlined text-[18px] text-[#ec4d86]">{tip.icon}</span>
                   </span>
-                  <p className="text-[12.5px] leading-relaxed pt-1.5">{tip.text}</p>
+                  <p className="text-[13.5px] leading-relaxed pt-1.5">{tip.text}</p>
                 </div>
               ))}
             </div>
-            <Button onClick={() => setShowSafetyTips(false)} className="w-full mt-2 bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-10 rounded-2xl shadow-elevation-md">
+            <Button onClick={() => setShowSafetyTips(false)} className="w-full mt-2 bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold h-12 rounded-2xl text-[14px] shadow-elevation-md">
               Entendido
             </Button>
           </div>

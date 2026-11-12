@@ -16,7 +16,7 @@ const SheetOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      'fixed inset-0 z-50 bg-[#0a1120]/70 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
     )}
     {...props}
@@ -25,15 +25,17 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  'fixed z-50 gap-4 border bg-white shadow-2xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300 border-rose-100 dark:border-rose-950/40 dark:bg-[#0a1120] dark:text-rose-50',
+  // Paneles laterales con esquinas interiores redondeadas (radius-xl) y fondo
+  // midnight-900 en dark para despegarse del overlay; borde hairline en vez de rosa.
+  'fixed z-50 gap-4 border bg-white text-[#16223b] shadow-elevation-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300 border-black/[0.06] dark:border-white/10 dark:bg-[#0f1a2e] dark:text-[#f5f1e8]',
   {
     variants: {
       side: {
-        left: 'inset-y-0 left-0 h-full w-[85%] max-w-[310px] data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left',
+        left: 'inset-y-0 left-0 h-full w-[86%] max-w-[320px] rounded-r-[var(--radius-xl)] border-l-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left',
         right:
-          'inset-y-0 right-0 h-full w-[85%] max-w-sm data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
+          'inset-y-0 right-0 h-full w-[86%] max-w-sm rounded-l-[var(--radius-xl)] border-r-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
         bottom:
-          'inset-x-0 bottom-0 max-h-[90dvh] rounded-t-3xl data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
+          'inset-x-0 bottom-0 max-h-[90dvh] rounded-t-[var(--radius-xl)] border-b-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
       },
     },
     defaultVariants: { side: 'right' },
@@ -50,8 +52,8 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Co
       <SheetOverlay />
       <DialogPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full p-1.5 opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-500 dark:text-rose-300">
-          <X className="h-4 w-4" />
+        <DialogPrimitive.Close className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full opacity-70 transition-all hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-rose-500/50 hover:bg-black/5 dark:hover:bg-white/10 text-[#5b6478] dark:text-[#a9b2c9]">
+          <X className="h-[18px] w-[18px]" strokeWidth={2.25} />
           <span className="sr-only">Cerrar</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
@@ -76,7 +78,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('font-headline-md text-lg font-bold text-slate-900 dark:text-rose-50', className)}
+    className={cn('font-headline-md text-[19px] font-extrabold tracking-[-0.015em] text-[#16223b] dark:text-[#f5f1e8]', className)}
     {...props}
   />
 ));
@@ -86,7 +88,7 @@ const SheetDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description ref={ref} className={cn('text-sm text-slate-500 dark:text-rose-300/70', className)} {...props} />
+  <DialogPrimitive.Description ref={ref} className={cn('text-[13.5px] leading-relaxed text-[#5b6478] dark:text-[#a9b2c9]', className)} {...props} />
 ));
 SheetDescription.displayName = DialogPrimitive.Description.displayName;
 

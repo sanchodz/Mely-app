@@ -53,24 +53,37 @@ interface RowProps {
   isLight: boolean;
 }
 
-// El ícono líder por fila (icon) se dejó de renderizar acá: Settings.dc.html no lleva
-// ningún ícono al inicio de las filas, salvo un caso puntual (verificación de perfil)
-// que se resuelve en su propio row en vez de vía este prop genérico. Se mantiene `icon`
-// en las props para no tener que tocar cada llamado — simplemente ya no se pinta.
-const SettingsRow: React.FC<RowProps> = ({ label, description, onClick, trailing, danger, isLight }) => {
+// Fila estándar de Ajustes: ícono líder en un tile tintado (orienta más rápido que
+// el texto solo), label a 15px, descripción neutra y chevron solo cuando navega.
+// Alto mínimo 56px para que cada fila sea un objetivo táctil cómodo.
+const SettingsRow: React.FC<RowProps> = ({ icon, label, description, onClick, trailing, danger, isLight }) => {
   const content = (
     <>
+      <span
+        className={`w-9 h-9 rounded-[var(--radius-sm)] flex items-center justify-center shrink-0 ${
+          danger
+            ? 'bg-red-500/12 text-red-500'
+            : isLight
+              ? 'bg-[var(--coral-100)] text-[var(--coral-700)]'
+              : 'bg-[var(--coral-500)]/15 text-[var(--coral-300)]'
+        }`}
+        aria-hidden="true"
+      >
+        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+      </span>
       <div className="flex-1 min-w-0 text-left">
-        <span className={`block text-[13px] font-semibold ${danger ? 'text-red-500' : isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}>
+        <span className={`block text-[15px] font-semibold leading-snug ${danger ? 'text-red-500' : isLight ? 'text-[var(--text-on-light)]' : 'text-[var(--text-primary)]'}`}>
           {label}
         </span>
         {description && (
-          <span className={`block text-[11px] mt-0.5 truncate ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>{description}</span>
+          <span className={`block text-[12.5px] mt-0.5 leading-snug ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>
+            {description}
+          </span>
         )}
       </div>
       {trailing}
       {onClick && (
-        <span className={`material-symbols-outlined text-[18px] shrink-0 ${isLight ? 'text-gray-300' : 'text-white/25'}`} aria-hidden="true">
+        <span className={`material-symbols-outlined text-[22px] shrink-0 ${isLight ? 'text-[var(--text-on-light-muted)]/60' : 'text-[var(--text-tertiary)]'}`} aria-hidden="true">
           chevron_right
         </span>
       )}
@@ -78,7 +91,7 @@ const SettingsRow: React.FC<RowProps> = ({ label, description, onClick, trailing
   );
 
   if (!onClick) {
-    return <div className="w-full flex items-center gap-3 p-3.5 min-h-11">{content}</div>;
+    return <div className="w-full flex items-center gap-3.5 px-4 py-3 min-h-14">{content}</div>;
   }
 
   return (
@@ -88,8 +101,8 @@ const SettingsRow: React.FC<RowProps> = ({ label, description, onClick, trailing
         sounds.playClick();
         onClick();
       }}
-      className={`w-full flex items-center gap-3 p-3.5 min-h-11 text-left transition-colors cursor-pointer ${
-        isLight ? 'hover:bg-[#fcf9f2]' : 'hover:bg-white/5'
+      className={`w-full flex items-center gap-3.5 px-4 py-3 min-h-14 text-left transition-colors cursor-pointer ${
+        isLight ? 'hover:bg-[var(--color-canvas)] active:bg-[var(--color-canvas)]' : 'hover:bg-white/5 active:bg-white/5'
       }`}
     >
       {content}
@@ -98,19 +111,14 @@ const SettingsRow: React.FC<RowProps> = ({ label, description, onClick, trailing
 };
 
 const SettingsGroup: React.FC<{ title?: string; children: React.ReactNode; isLight: boolean }> = ({ title, children, isLight }) => (
-  <div className="flex flex-col gap-2">
-    {title && (
-      <span className={`font-label-caps text-[10px] uppercase font-bold tracking-wider px-1 ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]'}`}>
-        {title}
-      </span>
-    )}
-    {/* Settings.dc.html usa un borde hairline sin sombra (tarjeta chata), no el
-        border-[#ffe0ec]/shadow-xl que quedaba de la paleta cherry vieja. --hairline es
-        claro (pensado para fondos oscuros), así que en modo claro se usa el equivalente
-        oscuro-translúcido (--color-line) que ya usa surface-panel. */}
+  <div className="flex flex-col gap-2.5">
+    {title && <span className="section-kicker px-1">{title}</span>}
+    {/* Tarjeta estándar: borde hairline + sombra suave, igual que Perfil y Tienda. */}
     <div
-      className={`rounded-[var(--radius-lg)] border overflow-hidden divide-y ${
-        isLight ? 'bg-white border-[var(--color-line)] divide-[var(--color-line)]' : 'bg-[#0f1a2e] border-[var(--hairline)] divide-[var(--hairline)]'
+      className={`rounded-[var(--radius-lg)] border overflow-hidden divide-y shadow-elevation-sm ${
+        isLight
+          ? 'bg-white border-[var(--color-line)] divide-[var(--color-line)]'
+          : 'bg-[var(--midnight-900)] border-[var(--hairline-strong)] divide-[var(--hairline)]'
       }`}
     >
       {children}
@@ -120,10 +128,13 @@ const SettingsGroup: React.FC<{ title?: string; children: React.ReactNode; isLig
 
 const StatusPill: React.FC<{ ok: boolean; label: string }> = ({ ok, label }) => (
   <span
-    className={`font-label-caps text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
-      ok ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
+    className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-bold uppercase tracking-[0.06em] shrink-0 ${
+      ok ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-300' : 'bg-amber-500/12 text-amber-600 dark:text-amber-300'
     }`}
   >
+    <span className="material-symbols-outlined text-[14px]" style={ok ? { fontVariationSettings: "'FILL' 1" } : undefined} aria-hidden="true">
+      {ok ? 'check_circle' : 'schedule'}
+    </span>
     {label}
   </span>
 );
@@ -326,14 +337,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className={`w-full max-w-[420px] mx-auto flex flex-col gap-5 pb-24 ${isLight ? 'text-[#16223b]' : 'text-[#f5f1e8]'}`}
+      className={`w-full max-w-[420px] mx-auto flex flex-col gap-6 pb-24 ${isLight ? 'text-[var(--text-on-light)]' : 'text-[var(--text-primary)]'}`}
     >
       <motion.div variants={itemVariants}>
       <SettingsGroup title="Tu perfil" isLight={isLight}>
         <SettingsRow
           isLight={isLight}
           icon="badge"
-          label="Editar Perfil"
+          label="Editar perfil"
           description="Nombre, bio, ocupación, género e intereses"
           onClick={() => setActiveSheet('profile')}
         />
@@ -347,7 +358,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
         <SettingsRow
           isLight={isLight}
           icon="radar"
-          label="Preferencias de Descubrimiento"
+          label="Preferencias de descubrimiento"
           description={`${maxDistanceKm} km · ${minAge}-${maxAge} años`}
           onClick={() => setActiveSheet('discovery')}
         />
@@ -377,7 +388,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
           icon="volume_up"
           label="Sonidos de la app"
           trailing={
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="secondary"
@@ -386,7 +397,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                   e.stopPropagation();
                   sounds.playStamp();
                 }}
-                className="h-7 px-2 text-[9px] rounded-lg tracking-normal"
+                className="h-9 px-3 text-[12px] rounded-full tracking-normal"
               >
                 Sello
               </Button>
@@ -398,7 +409,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                   e.stopPropagation();
                   sounds.playCoins();
                 }}
-                className="h-7 px-2 text-[9px] rounded-lg tracking-normal"
+                className="h-9 px-3 text-[12px] rounded-full tracking-normal"
               >
                 Coins
               </Button>
@@ -454,7 +465,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
           icon="verified_user"
           label="Verificación de identidad"
           trailing={
-            <span className="font-label-caps text-[10px] text-[#ec4d86] font-bold shrink-0">{user.badges.verificationLabel}</span>
+            <span className={`inline-flex items-center h-7 px-2.5 rounded-full text-[11px] font-bold uppercase tracking-[0.06em] shrink-0 ${isLight ? 'bg-[var(--coral-100)] text-[var(--coral-700)]' : 'bg-[var(--coral-500)]/15 text-[var(--coral-300)]'}`}>{user.badges.verificationLabel}</span>
           }
         />
         <SettingsRow
@@ -472,13 +483,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
         <SettingsRow
           isLight={isLight}
           icon="logout"
-          label="Cerrar Sesión"
+          label="Cerrar sesión"
           onClick={() => setShowSignOutConfirm(true)}
         />
         <SettingsRow
           isLight={isLight}
           icon="delete_forever"
-          label="Eliminar Cuenta Permanentemente"
+          label="Eliminar cuenta permanentemente"
           danger
           onClick={() => setShowDeleteConfirm(true)}
         />
@@ -487,19 +498,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
 
       {/* --- PANEL: Editar Perfil --- */}
       <Sheet open={activeSheet === 'profile'} onOpenChange={(open) => !open && setActiveSheet(null)}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-lg)] flex flex-col gap-4 p-5">
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-xl)] flex flex-col gap-5 p-5 pb-8">
           <SheetHeader>
             <SheetTitle>Editar Perfil</SheetTitle>
           </SheetHeader>
 
           <div>
-            <Label className="mb-1 block">Nombre</Label>
+            <Label className="mb-1.5 block">Nombre</Label>
             <Input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required minLength={2} maxLength={40} />
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <Label className="mb-1 block">Ciudad</Label>
+              <Label className="mb-1.5 block">Ciudad</Label>
               <Select value={city} onValueChange={setCity}>
                 <SelectTrigger className="text-[12px]">
                   <SelectValue />
@@ -514,30 +525,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
               </Select>
             </div>
             <div>
-              <Label className="mb-1 block">Barrio / Zona</Label>
+              <Label className="mb-1.5 block">Barrio / Zona</Label>
               <Input type="text" value={zone} onChange={(e) => setZone(e.target.value)} maxLength={80} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <Label className="mb-1 block">Ocupación</Label>
+              <Label className="mb-1.5 block">Ocupación</Label>
               <Input type="text" value={job} onChange={(e) => setJob(e.target.value)} maxLength={80} />
             </div>
             <div>
-              <Label className="mb-1 block">Estudios</Label>
+              <Label className="mb-1.5 block">Estudios</Label>
               <Input type="text" value={studies} onChange={(e) => setStudies(e.target.value)} maxLength={80} />
             </div>
           </div>
 
           <div>
-            <Label className="mb-1 block">Bio</Label>
+            <Label className="mb-1.5 block">Bio</Label>
             <Textarea rows={3} value={bio ?? ''} onChange={(e) => setBio(e.target.value)} maxLength={300} className="text-[12px]" />
           </div>
 
           <div>
-            <Label className="mb-1 block">Tu género</Label>
-            <div className="flex flex-wrap gap-1.5">
+            <Label className="mb-1.5 block">Tu género</Label>
+            <div className="flex flex-wrap gap-2">
               {GENDER_OPTIONS.map((g) => (
                 <button
                   key={g.value}
@@ -546,12 +557,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                     sounds.playClick();
                     setGender(g.value);
                   }}
-                  className={`px-3 py-1.5 rounded-full text-[11px] border transition-all cursor-pointer ${
+                  className={`h-9 px-3.5 rounded-full text-[13px] font-semibold border transition-all cursor-pointer ${
                     gender === g.value
-                      ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold border-transparent'
+                      ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white border-transparent shadow-[var(--shadow-coral)]'
                       : isLight
-                      ? 'bg-[#fcf9f2] border-[#ffe0ec]'
-                      : 'bg-[#0a1120] border-[#ec4d86]/25 text-[#ffa3c4]/70'
+                      ? 'bg-white border-[var(--color-line)] text-[var(--text-on-light)]'
+                      : 'bg-[var(--midnight-950)] border-[var(--hairline-strong)] text-[var(--text-secondary)]'
                   }`}
                 >
                   {g.label}
@@ -561,19 +572,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
           </div>
 
           <div>
-            <Label className="mb-1 block">Buscás conocer a</Label>
-            <div className="flex flex-wrap gap-1.5">
+            <Label className="mb-1.5 block">Buscás conocer a</Label>
+            <div className="flex flex-wrap gap-2">
               {GENDER_OPTIONS.map((g) => (
                 <button
                   key={g.value}
                   type="button"
                   onClick={() => toggleSeeking(g.value)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] border transition-all cursor-pointer ${
+                  className={`h-9 px-3.5 rounded-full text-[13px] font-semibold border transition-all cursor-pointer ${
                     seeking.includes(g.value)
-                      ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold border-transparent'
+                      ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white border-transparent shadow-[var(--shadow-coral)]'
                       : isLight
-                      ? 'bg-[#fcf9f2] border-[#ffe0ec]'
-                      : 'bg-[#0a1120] border-[#ec4d86]/25 text-[#ffa3c4]/70'
+                      ? 'bg-white border-[var(--color-line)] text-[var(--text-on-light)]'
+                      : 'bg-[var(--midnight-950)] border-[var(--hairline-strong)] text-[var(--text-secondary)]'
                   }`}
                 >
                   {g.label}
@@ -583,7 +594,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
           </div>
 
           <div>
-            <Label className="mb-1 block">Estás buscando</Label>
+            <Label className="mb-1.5 block">Estás buscando</Label>
             <Select value={lookingFor} onValueChange={(v) => setLookingFor(v as LookingFor)}>
               <SelectTrigger className="text-[12px]">
                 <SelectValue />
@@ -600,7 +611,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
 
           <div>
             <Label className="mb-1.5 block">Intereses ({selectedInterestIds.length}/20)</Label>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {interests.map((interest) => {
                 const isSelected = selectedInterestIds.includes(interest.id);
                 return (
@@ -608,12 +619,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                     key={interest.id}
                     type="button"
                     onClick={() => toggleInterest(interest.id)}
-                    className={`px-3 py-1 rounded-full text-[11px] transition-all border cursor-pointer ${
+                    className={`h-9 px-3.5 rounded-full text-[13px] font-semibold transition-all border cursor-pointer ${
                       isSelected
-                        ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white font-bold border-transparent'
+                        ? 'bg-gradient-to-r from-[#ec4d86] to-[#ff6b9e] text-white border-transparent shadow-[var(--shadow-coral)]'
                         : isLight
-                        ? 'bg-[#fcf9f2] text-[#2e5570] border-[#ffe0ec]'
-                        : 'bg-[#0a1120] text-[#ffa3c4]/70 border-[#ec4d86]/25'
+                        ? 'bg-white text-[var(--text-on-light)] border-[var(--color-line)]'
+                        : 'bg-[var(--midnight-950)] text-[var(--text-secondary)] border-[var(--hairline-strong)]'
                     }`}
                   >
                     {isSelected ? `✓ ${interest.name}` : `+ ${interest.name}`}
@@ -628,23 +639,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
             variant="primary"
             onClick={() => saveAll('Perfil actualizado correctamente.')}
             disabled={isSaving}
-            className="w-full gap-2 mt-1"
+            className="w-full h-12 rounded-full gap-2 mt-1 text-[15px]"
           >
-            <span className="material-symbols-outlined text-[16px]">save</span>
-            <span>GUARDAR PERFIL</span>
+            <span className="material-symbols-outlined text-[18px]">save</span>
+            <span>Guardar perfil</span>
           </Button>
         </SheetContent>
       </Sheet>
 
       {/* --- PANEL: Prompts e Icebreakers --- */}
       <Sheet open={activeSheet === 'prompts'} onOpenChange={(open) => !open && setActiveSheet(null)}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-lg)] flex flex-col gap-4 p-5">
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-xl)] flex flex-col gap-5 p-5 pb-8">
           <SheetHeader>
             <SheetTitle>Prompts e Icebreakers</SheetTitle>
           </SheetHeader>
 
           <div className="flex flex-col gap-2.5">
-            <span className="font-label-caps text-[10px] text-[#ec4d86] uppercase font-bold tracking-wider">Perfil a Ciegas 🕶️</span>
+            <span className="section-kicker">Perfil a ciegas</span>
             <Input
               type="text"
               value={blindTeaser}
@@ -671,39 +682,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
             />
           </div>
 
-          <div className={`pt-4 border-t flex flex-col gap-2.5 ${isLight ? 'border-[#ffe0ec]' : 'border-[#ec4d86]/20'}`}>
+          <div className={`pt-5 border-t flex flex-col gap-3 ${isLight ? 'border-[var(--color-line)]' : 'border-[var(--hairline)]'}`}>
             <div className="flex items-center justify-between">
-              <span className="font-label-caps text-[10px] text-[#ec4d86] uppercase font-bold tracking-wider">
-                Prompts de Perfil ({prompts.length}/5)
-              </span>
+              <span className="section-kicker">Prompts de perfil ({prompts.length}/5)</span>
               {prompts.length < 5 && (
-                <button type="button" onClick={addPrompt} className="text-[10px] font-bold text-[#ec4d86] flex items-center gap-1 cursor-pointer">
-                  <span className="material-symbols-outlined text-[14px]">add</span>Agregar
+                <button type="button" onClick={addPrompt} className="hit-slop h-8 px-2.5 -my-2 rounded-full text-[12.5px] font-bold text-[#ec4d86] flex items-center gap-1 cursor-pointer">
+                  <span className="material-symbols-outlined text-[16px]">add</span>Agregar
                 </button>
               )}
             </div>
             {prompts.length === 0 && (
-              <p className={`text-[11px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+              <p className={`text-[13px] leading-snug ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>
                 Todavía no agregaste ninguno. Los prompts aparecen en tu perfil para que rompan el hielo con vos.
               </p>
             )}
             {prompts.map((p, i) => (
-              <div key={p.id} className="flex flex-col gap-1.5">
-                <div className="flex gap-1.5">
+              <div key={p.id} className="flex flex-col gap-2">
+                <div className="flex gap-2">
                   <Input
                     type="text"
                     value={p.question}
                     onChange={(e) => setPrompts((prev) => prev.map((x, idx) => (idx === i ? { ...x, question: e.target.value } : x)))}
                     maxLength={120}
                     placeholder="Pregunta"
-                    className="flex-1 text-[12px] font-bold text-[#ec4d86] dark:text-[#ffa3c4]"
+                    className="flex-1 h-11 font-bold text-[#ec4d86] dark:text-[#ffa3c4]"
                   />
                   <Button
                     type="button"
                     variant="tertiary"
                     size="icon"
                     onClick={() => setPrompts((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="text-[#ec4d86] shrink-0"
+                    className="text-[#ec4d86] shrink-0 w-11 h-11"
                     aria-label="Borrar prompt"
                   >
                     <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
@@ -721,46 +730,46 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
             ))}
           </div>
 
-          <Button type="button" variant="primary" onClick={() => saveAll('Prompts guardados.')} disabled={isSaving} className="w-full mt-1">
-            GUARDAR
+          <Button type="button" variant="primary" onClick={() => saveAll('Prompts guardados.')} disabled={isSaving} className="w-full h-12 rounded-full mt-1 text-[15px]">
+            Guardar prompts
           </Button>
         </SheetContent>
       </Sheet>
 
       {/* --- PANEL: Preferencias de Descubrimiento --- */}
       <Sheet open={activeSheet === 'discovery'} onOpenChange={(open) => !open && setActiveSheet(null)}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-lg)] flex flex-col gap-4 p-5">
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-xl)] flex flex-col gap-5 p-5 pb-8">
           <SheetHeader>
             <SheetTitle>Preferencias de Descubrimiento</SheetTitle>
           </SheetHeader>
-          <p className={`text-[11px] -mt-2 ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+          <p className={`text-[13px] leading-snug -mt-2 ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>
             Estos valores son tu punto de partida cada vez que abrís los filtros de Descubrir.
           </p>
 
-          <div className={`p-3.5 rounded-[var(--radius-md)] border flex items-center gap-3 ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120] border-[#ec4d86]/20'}`}>
-            <span className="material-symbols-outlined text-[19px] text-[#ec4d86] shrink-0">location_on</span>
+          <div className={`p-4 rounded-[var(--radius-md)] border flex items-center gap-3 ${isLight ? 'bg-[var(--color-canvas)] border-[var(--color-line)]' : 'bg-[var(--midnight-950)] border-[var(--hairline)]'}`}>
+            <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isLight ? 'bg-[var(--coral-100)] text-[var(--coral-700)]' : 'bg-[var(--coral-500)]/15 text-[var(--coral-300)]'}`}><span className="material-symbols-outlined text-[20px]">location_on</span></span>
             <div className="flex-1 min-w-0">
-              <span className="block text-[13px] font-bold">Mi ubicación</span>
-              <span className="block text-[11px] text-[#5b6478] dark:text-[#ffa3c4]/70">
+              <span className="block text-[14.5px] font-bold">Mi ubicación</span>
+              <span className="block text-[12.5px] mt-0.5 text-[var(--text-on-light-muted)] dark:text-[var(--text-secondary)]">
                 {user.hasLocation ? 'Activa — se usa para calcular la distancia' : 'No activada — no filtramos por distancia'}
               </span>
             </div>
-            <Button type="button" variant="secondary" size="sm" onClick={handleUpdateLocation} disabled={updateLocation.isPending} className="shrink-0 rounded-full">
+            <Button type="button" variant="secondary" size="sm" onClick={handleUpdateLocation} disabled={updateLocation.isPending} className="shrink-0 h-10 px-4 rounded-full text-[13px]">
               {updateLocation.isPending ? '...' : user.hasLocation ? 'Actualizar' : 'Activar'}
             </Button>
           </div>
 
-          <div className={`p-4 rounded-[var(--radius-md)] border flex flex-col gap-3 ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120] border-[#ec4d86]/20'}`}>
+          <div className={`p-4 rounded-[var(--radius-md)] border flex flex-col gap-4 ${isLight ? 'bg-[var(--color-canvas)] border-[var(--color-line)]' : 'bg-[var(--midnight-950)] border-[var(--hairline)]'}`}>
             <div className="flex justify-between items-center">
-              <span className="font-label-caps text-[10px] uppercase font-bold">Distancia Máxima</span>
-              <span className="font-headline-md text-[16px] text-[#ec4d86] font-bold">{maxDistanceKm} km</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--text-on-light-muted)] dark:text-[var(--text-tertiary)]">Distancia máxima</span>
+              <span className="text-[18px] text-[#ec4d86] font-bold tabular-nums">{maxDistanceKm} km</span>
             </div>
             <Slider min={1} max={500} step={1} value={[maxDistanceKm]} onValueChange={([v]) => setMaxDistanceKm(v)} />
           </div>
-          <div className={`p-4 rounded-[var(--radius-md)] border flex flex-col gap-3 ${isLight ? 'bg-[#fcf9f2] border-[#ffe0ec]' : 'bg-[#0a1120] border-[#ec4d86]/20'}`}>
+          <div className={`p-4 rounded-[var(--radius-md)] border flex flex-col gap-4 ${isLight ? 'bg-[var(--color-canvas)] border-[var(--color-line)]' : 'bg-[var(--midnight-950)] border-[var(--hairline)]'}`}>
             <div className="flex justify-between items-center">
-              <span className="font-label-caps text-[10px] uppercase font-bold">Rango de Edad</span>
-              <span className="font-headline-md text-[16px] text-[#ec4d86] font-bold">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--text-on-light-muted)] dark:text-[var(--text-tertiary)]">Rango de edad</span>
+              <span className="text-[18px] text-[#ec4d86] font-bold tabular-nums">
                 {minAge} - {maxAge} años
               </span>
             </div>
@@ -775,32 +784,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
               }}
             />
           </div>
-          <Button type="button" variant="primary" onClick={() => saveAll('Preferencias de descubrimiento actualizadas.')} disabled={isSaving} className="w-full">
-            Guardar Preferencias
+          <Button type="button" variant="primary" onClick={() => saveAll('Preferencias de descubrimiento actualizadas.')} disabled={isSaving} className="w-full h-12 rounded-full text-[15px]">
+            Guardar preferencias
           </Button>
         </SheetContent>
       </Sheet>
 
       {/* --- PANEL: Verificar Teléfono --- */}
       <Sheet open={activeSheet === 'phone'} onOpenChange={(open) => !open && setActiveSheet(null)}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-lg)] flex flex-col gap-4 p-5">
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-xl)] flex flex-col gap-5 p-5 pb-8">
           <SheetHeader>
             <SheetTitle>Verificar Teléfono</SheetTitle>
           </SheetHeader>
 
           {phoneStep === 'enter' ? (
             <>
-              <p className={`text-[11px] -mt-2 ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+              <p className={`text-[13px] leading-snug -mt-2 ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>
                 Te mandamos un código de 6 dígitos por WhatsApp a este número. Incluí el código de país.
               </p>
               <div>
-                <Label className="mb-1 block">Número de WhatsApp</Label>
+                <Label className="mb-1.5 block">Número de WhatsApp</Label>
                 <Input
                   type="tel"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
                   placeholder="+54 9 11 1234-5678"
-                  className="font-mono text-[13px]"
+                  className="h-12 font-mono"
                 />
               </div>
               <Button
@@ -808,21 +817,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                 variant="primary"
                 onClick={handleSendPhoneCode}
                 disabled={requestPhoneCode.isPending || !phoneInput.trim()}
-                className="w-full h-auto min-h-11 py-2.5 whitespace-normal"
+                className="w-full h-auto min-h-12 py-3 rounded-full whitespace-normal text-[15px]"
               >
                 <span className="block text-center leading-snug">
-                  <span className="material-symbols-outlined text-[18px] align-middle mr-1">chat</span>
-                  {requestPhoneCode.isPending ? 'ENVIANDO...' : 'ENVIAR CÓDIGO POR WHATSAPP'}
+                  <span className="material-symbols-outlined text-[18px] align-middle mr-1.5">chat</span>
+                  {requestPhoneCode.isPending ? 'Enviando...' : 'Enviar código por WhatsApp'}
                 </span>
               </Button>
             </>
           ) : (
             <>
-              <p className={`text-[11px] -mt-2 ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+              <p className={`text-[13px] leading-snug -mt-2 ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>
                 Te escribimos por WhatsApp a {phoneInput}. Ingresá el código de 6 dígitos que recibiste.
               </p>
               <div>
-                <Label className="mb-1 block">Código de verificación</Label>
+                <Label className="mb-1.5 block">Código de verificación</Label>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -830,7 +839,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                   value={phoneCode}
                   onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="123456"
-                  className="text-center font-mono text-[18px] tracking-[0.3em]"
+                  className="h-14 text-center font-mono text-[22px] tracking-[0.3em]"
                 />
               </div>
               <Button
@@ -838,15 +847,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                 variant="primary"
                 onClick={handleVerifyPhoneCode}
                 disabled={verifyPhoneCode.isPending || phoneCode.length < 4}
-                className="w-full gap-2"
+                className="w-full h-12 rounded-full gap-2 text-[15px]"
               >
                 <span className="material-symbols-outlined text-[18px]">verified</span>
-                <span>{verifyPhoneCode.isPending ? 'VERIFICANDO...' : 'VERIFICAR CÓDIGO'}</span>
+                <span>{verifyPhoneCode.isPending ? 'Verificando...' : 'Verificar código'}</span>
               </Button>
               <button
                 type="button"
                 onClick={() => setPhoneStep('enter')}
-                className="text-[11px] font-bold text-[#ec4d86] text-center cursor-pointer"
+                className="min-h-11 text-[13px] font-bold text-[#ec4d86] text-center cursor-pointer"
               >
                 Usar otro número / reenviar código
               </button>
@@ -856,11 +865,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
       </Sheet>
 
       <Sheet open={activeSheet === 'blocked'} onOpenChange={(open) => !open && setActiveSheet(null)}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-lg)] flex flex-col gap-3 p-5">
+        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-xl)] flex flex-col gap-4 p-5 pb-8">
           <SheetHeader>
             <SheetTitle>Cuentas bloqueadas</SheetTitle>
           </SheetHeader>
-          <p className={`text-[11px] -mt-2 ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>
+          <p className={`text-[13px] leading-snug -mt-2 ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>
             Las personas que bloqueás no pueden verte, escribirte ni aparecer en tu Descubrir.
           </p>
           {isLoadingBlocked ? (
@@ -869,20 +878,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
               <div className="h-14 rounded-2xl bg-black/5 dark:bg-white/5 animate-pulse" />
             </div>
           ) : blockedUsers.length === 0 ? (
-            <div className="flex flex-col items-center text-center py-8 gap-2">
-              <span className="material-symbols-outlined text-[32px] text-[#ec4d86]/60">block</span>
-              <p className={`text-[12.5px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/70'}`}>No bloqueaste a nadie todavía.</p>
+            <div className="flex flex-col items-center text-center py-10 gap-3">
+              <span className={`w-14 h-14 rounded-full border-2 border-dashed flex items-center justify-center text-[#ec4d86] ${isLight ? 'border-[var(--color-line)] bg-white' : 'border-[var(--hairline-strong)] bg-[var(--midnight-900)]'}`}>
+                <span className="material-symbols-outlined text-[26px]">block</span>
+              </span>
+              <p className={`text-[14px] ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>No bloqueaste a nadie todavía.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2 mt-1">
               {blockedUsers.map((b) => (
                 <div
                   key={b.id}
-                  className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl border ${
-                    isLight ? 'bg-white border-[#ffe0ec]' : 'bg-white/5 border-white/10'
+                  className={`flex items-center justify-between gap-3 px-4 py-3 min-h-14 rounded-[var(--radius-md)] border ${
+                    isLight ? 'bg-white border-[var(--color-line)]' : 'bg-[var(--midnight-900)] border-[var(--hairline-strong)]'
                   }`}
                 >
-                  <span className="text-[13px] font-bold truncate">{b.displayName}</span>
+                  <span className="text-[14.5px] font-bold truncate">{b.displayName}</span>
                   <Button
                     type="button"
                     variant="secondary"
@@ -892,7 +903,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                       await unblockUser.mutateAsync(b.id);
                       toast.success(`Desbloqueaste a ${b.displayName}`);
                     }}
-                    className="h-7 px-3 text-[10.5px] shrink-0"
+                    className="h-9 px-3.5 rounded-full text-[12.5px] shrink-0"
                   >
                     Desbloquear
                   </Button>
@@ -904,14 +915,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
       </Sheet>
 
       <Dialog open={showSignOutConfirm} onOpenChange={setShowSignOutConfirm}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-[360px] p-6 text-center">
-          <h3 className="font-headline-md text-[18px] font-bold">¿Cerrar Sesión?</h3>
-          <p className={`text-[12px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>Vas a poder volver a ingresar en cualquier momento con tus credenciales.</p>
-          <div className="flex gap-2.5">
-            <Button type="button" variant="tertiary" onClick={() => setShowSignOutConfirm(false)} className="flex-1">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-[360px] p-6 text-center flex flex-col gap-3">
+          <span className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center ${isLight ? 'bg-[var(--coral-100)] text-[var(--coral-700)]' : 'bg-[var(--coral-500)]/15 text-[var(--coral-300)]'}`}>
+            <span className="material-symbols-outlined text-[28px]">logout</span>
+          </span>
+          <h3 className="text-[22px] italic font-semibold leading-tight" style={{ fontFamily: 'var(--font-display)' }}>¿Cerrar sesión?</h3>
+          <p className={`text-[13.5px] leading-snug ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>Vas a poder volver a ingresar en cualquier momento con tus credenciales.</p>
+          <div className="flex gap-2.5 mt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowSignOutConfirm(false)} className="flex-1 h-12 rounded-full text-[15px]">
               Cancelar
             </Button>
-            <Button type="button" variant="primary" onClick={() => { setShowSignOutConfirm(false); onSignOut(); }} className="flex-1">
+            <Button type="button" variant="primary" onClick={() => { setShowSignOutConfirm(false); onSignOut(); }} className="flex-1 h-12 rounded-full text-[15px]">
               Confirmar
             </Button>
           </div>
@@ -919,13 +933,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
       </Dialog>
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-[360px] p-6 text-center">
-          <h3 className="font-headline-md text-[18px] font-bold text-red-500">Eliminar cuenta</h3>
-          <p className={`text-[12px] ${isLight ? 'text-[#5b6478]' : 'text-[#ffa3c4]/80'}`}>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-[360px] p-6 text-center flex flex-col gap-3">
+          <span className="mx-auto w-14 h-14 rounded-full flex items-center justify-center bg-red-500/12 text-red-500">
+            <span className="material-symbols-outlined text-[28px]">delete_forever</span>
+          </span>
+          <h3 className="text-[22px] italic font-semibold leading-tight text-red-500" style={{ fontFamily: 'var(--font-display)' }}>Eliminar cuenta</h3>
+          <p className={`text-[13.5px] leading-snug ${isLight ? 'text-[var(--text-on-light-muted)]' : 'text-[var(--text-secondary)]'}`}>
             Esta acción es permanente. Se borra tu perfil, matches, mensajes y saldo. No se puede deshacer.
           </p>
-          <div className="flex gap-2.5">
-            <Button type="button" variant="tertiary" onClick={() => setShowDeleteConfirm(false)} className="flex-1">
+          <div className="flex gap-2.5 mt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowDeleteConfirm(false)} className="flex-1 h-12 rounded-full text-[15px]">
               Cancelar
             </Button>
             <Button
@@ -937,7 +954,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSignOut }) => {
                 onSignOut();
               }}
               disabled={deleteAccount.isPending}
-              className="flex-1"
+              className="flex-1 h-12 rounded-full text-[15px]"
             >
               Eliminar
             </Button>
