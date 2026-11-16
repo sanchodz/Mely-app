@@ -110,14 +110,13 @@ El workflow reutilizable acepta: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PA
 | Web Push (VAPID) | Front + back | Notificaciones del sistema | Par de claves propio |
 | Expo Push | Backend | Push móvil (opcional) | Cuenta Expo |
 | Google Fonts, Unsplash | Front | Fuentes, imágenes de ejemplo | Sin cuenta |
-| `shadownrx/code` | CI frontend | Workflow reutilizable de build móvil | **Cuenta personal del dueño anterior** |
 
 ## 5. Automatizaciones
 
 | Tipo | Dónde | Qué hace |
 | --- | --- | --- |
 | GitHub Actions `CI` | `.github/workflows/ci.yml` | En cada push/PR: `npm ci`, `lint`, `test`, `build`. |
-| GitHub Actions `Build Mobile` | `.github/workflows/build-mobile.yml` | En push a `main`, PR y manual: llama a `shadownrx/code/.github/workflows/build-mobile.yml@main` con `secrets: inherit`. |
+| GitHub Actions `Build Mobile` | `.github/workflows/build-mobile.yml` | En push a `main`, PR y manual: llama al workflow reutilizable local `.github/workflows/build-mobile-reusable.yml` (copia de `shadownrx/code` @ `21332a0`) con `secrets: inherit`. |
 | Vercel Git integration | Ambos repos | Deploy preview por PR, producción en push a `main`. |
 | Vercel Cron | `backend/vercel.json` | `GET /api/v1/internal/cron` todos los días 08:00 UTC: marca matches inactivos, vence propuestas y membresías, recuerda citas. |
 | `node-cron` | `backend/src/jobs/index.ts` | Lo mismo cada 15 min, **solo fuera de Vercel** (Docker/Railway). |
@@ -189,18 +188,24 @@ Regla: todo lo que el dueño anterior pudo ver se **regenera** después del tras
 | Apple Developer | Cuenta propia del nuevo dueño | Necesario para iOS real. |
 | Tokens personales (`gh`, `vercel`) del dueño anterior | Revocar | Ninguno. |
 
+### 9.1 Cómo pasar las variables de entorno
+
+- **Las de Vercel no se pasan a mano.** Al transferir cada proyecto (§10.2) sus env vars se mueven solas, y las de Neon (`POSTGRES_*`, `DATABASE_URL`) las mantiene la integración.
+- Si el nuevo dueño necesita una copia local, la baja él mismo desde su team con `vercel env pull .env.local` (en `backend/`, con el proyecto linkeado). Nunca se mandan por chat, email, issue ni PR.
+- Lo que no vive en Vercel (logins de Ably, Cloudinary, Resend, Twilio, Google Cloud) se pasa invitando al nuevo dueño como Owner en cada servicio, no compartiendo la clave.
+- Si hace falta pasar un valor suelto: bóveda compartida de un gestor (1Password, Bitwarden) o un envío con vencimiento y una sola lectura (Bitwarden Send, 1Password share link). Después se rota igual (§9).
+- GitHub Actions hoy no tiene secrets; si se agregan (keystore, Apple), los carga el nuevo dueño en Settings → Secrets.
+
 ## 10. Pasos de transferencia
 
 ### 10.1 GitHub
 
 Estado actual: ambos repos ya son de `sanchodz` (admin). `shadownrx` sigue como colaborador con `write`.
 
-1. Copiar el workflow reutilizable a un repo del nuevo dueño: crear `sanchodz/<repo>` con `.github/workflows/build-mobile.yml` copiado de `shadownrx/code`, o pegar el contenido directo en este repo.
-2. Cambiar `uses: shadownrx/code/.github/workflows/build-mobile.yml@main` en `.github/workflows/build-mobile.yml` al nuevo origen, fijado a un SHA o tag (no `@main`).
-3. Verificar que `Build Mobile` corre verde con el nuevo origen.
-4. Revisar Settings → Webhooks, Deploy keys, GitHub Apps instaladas y Branch protection de ambos repos.
-5. Al final (ver §12), quitar a `shadownrx` como colaborador.
-6. Opcional: hacer privado `sanchodz/Mely-app` si no se quiere el código expuesto.
+1. ✅ Hecho: el workflow reutilizable de `shadownrx/code` se copió a `.github/workflows/build-mobile-reusable.yml`. Ya no hay dependencia externa.
+2. Revisar Settings → Webhooks, Deploy keys, GitHub Apps instaladas y Branch protection de ambos repos.
+3. Al final (ver §12), quitar a `shadownrx` como colaborador.
+4. Opcional: hacer privado `sanchodz/Mely-app` si no se quiere el código expuesto.
 
 ### 10.2 Vercel
 
@@ -231,7 +236,6 @@ Antes de cualquier opción: hacer un `pg_dump` y guardar el archivo cifrado. Des
 
 | Riesgo | Impacto | Mitigación |
 | --- | --- | --- |
-| `Build Mobile` depende de `shadownrx/code@main`, en la cuenta personal del dueño anterior | Si ese repo cambia o se borra, no hay más builds de APK. `@main` además permite que cambie sin aviso. Usa `secrets: inherit`, así que recibe todos los secrets del repo. | §10.1 pasos 1–3. |
 | Cada deploy del backend corre `prisma migrate deploy` | Un preview con la misma `DATABASE_URL` que producción aplica migraciones a producción. | Usar branch de Neon por preview o una `DATABASE_URL` distinta en Preview. |
 | Base gestionada por la integración de Vercel | Si se transfiere el proyecto antes que la base, o se desinstala la integración, la API se queda sin base. | Orden de §10.2. No desinstalar la integración vieja hasta verificar la nueva. |
 | `FRONTEND_ORIGIN` / fallback hardcodeado a `findy-app-ten.vercel.app` | Cambiar el dominio del front rompe CORS. | Actualizar `FRONTEND_ORIGIN` antes de cambiar dominio. |
@@ -254,7 +258,7 @@ Hacer en este orden. Marcar cada uno solo después de verificarlo.
 - [ ] Nuevo dueño con cuentas propias: Vercel (team), Neon, Ably, Cloudinary, Resend, Twilio, Google Cloud, Apple/Google Play si aplica.
 
 **Transferencias**
-- [ ] Workflow `build-mobile.yml` copiado a un repo del nuevo dueño y `uses:` actualizado y fijado a SHA.
+- [x] Workflow reutilizable copiado al repo (`build-mobile-reusable.yml`), sin dependencia de `shadownrx/code`.
 - [ ] Recurso Neon transferido al team del nuevo dueño.
 - [ ] Proyecto Vercel backend transferido; integraciones reconectadas; env vars verificadas; Cron activo.
 - [ ] Proyecto Vercel frontend transferido; env vars verificadas.
