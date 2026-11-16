@@ -1,6 +1,7 @@
 name: Build Mobile
 
-# Compila Android (APK + AAB) e iOS con el workflow reutilizable de shadownrx/code.
+# Compila Android (APK + AAB) e iOS con el workflow reutilizable local
+# (.github/workflows/build-mobile-reusable.yml).
 # Los artefactos quedan en la corrida (Actions → esta corrida → Artifacts →
 # android-build / ios-build).
 on:
@@ -11,7 +12,7 @@ on:
 
 jobs:
   build:
-    uses: shadownrx/code/.github/workflows/build-mobile.yml@main
+    uses: ./.github/workflows/build-mobile-reusable.yml
     with:
       project_type: pwa
       # Sin los secrets IOS_* (cuenta de Apple Developer) iOS sale como App-unsigned.zip:
