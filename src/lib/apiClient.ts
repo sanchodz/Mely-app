@@ -1,6 +1,21 @@
 import { tokenStore } from './tokenStore';
 
-export const API_BASE_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000';
+const CONFIGURED_API_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000';
+
+/**
+ * En la web desplegada en Vercel (*.vercel.app) la API se llama por el mismo dominio:
+ * vercel.json reescribe /api/v1/* hacia el backend. Así el navegador no hace chequeo de
+ * CORS y la web sigue andando aunque el backend no tenga este dominio en FRONTEND_ORIGIN.
+ * La app nativa (Capacitor sirve desde localhost) y el dev local siguen usando VITE_API_URL.
+ */
+function resolveApiBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')) {
+    return window.location.origin;
+  }
+  return CONFIGURED_API_URL;
+}
+
+export const API_BASE_URL: string = resolveApiBaseUrl();
 
 export class ApiError extends Error {
   status: number;
